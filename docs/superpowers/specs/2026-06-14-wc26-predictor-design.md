@@ -57,9 +57,22 @@ player account. First admin is set manually in the database.
 | Flags | **flag-icons** (rectangular) | Real SVG flags |
 | Icons | **Lucide** (line icons) | Matches the mockups |
 | Backend | **Supabase** (Postgres + Auth + RLS + Realtime) | Requested; gives DB, auth, security, live updates in one |
-| Hosting | Static host (Vercel/Netlify) for frontend; Supabase cloud for backend | Free tier sufficient for <20 users |
+| Source control | **GitHub** repo | Requested |
+| Hosting | **GitHub Pages** (static frontend) + Supabase cloud (backend) | Requested; free; auto-deploy via GitHub Actions |
 
 Mobile-first, responsive up to desktop.
+
+### Deployment (GitHub)
+- Code lives in a GitHub repository.
+- A **GitHub Actions** workflow builds the Vite app and deploys `dist/` to
+  **GitHub Pages** on every push to `main`.
+- Because GitHub Pages serves a static SPA, Vite is configured with the correct
+  `base` path, and a `404.html` fallback (copy of `index.html`) handles
+  client-side routing.
+- Supabase **URL** and **anon key** are injected at build time via GitHub
+  repository **secrets/variables**. The anon key is safe to ship publicly because
+  Row Level Security (Section 9) enforces all access rules. The service-role key
+  is **never** placed in the frontend.
 
 ---
 
@@ -297,8 +310,9 @@ the admin then sets their legacy points by matching names.
 
 ## 13. Build sequence (informs the implementation plan)
 
-1. **Foundation** — Vite+React+TS+Tailwind project, Geist/flag-icons/Lucide,
-   neumorphism design tokens, Supabase project + schema + RLS + seed teams/fixtures.
+1. **Foundation** — GitHub repo + Vite+React+TS+Tailwind project, Geist/flag-icons/Lucide,
+   neumorphism design tokens, GitHub Actions → Pages deploy, Supabase project +
+   schema + RLS + seed teams/fixtures.
 2. **Auth** — name+PIN sign-up/login, persisted session, profile row creation.
 3. **Matches + predictions** — match list, score inputs, open/locked/finished
    states, save with DB-enforced locking.
