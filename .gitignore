@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+
+# Environment / secrets
+.env
+.env.local
+.env.*.local
+
+# Supabase local
+.branches
+.temp
+
+# Editor / OS
+.DS_Store
+.vscode/
+.idea/
+
+# Brainstorm companion scratch files
+.superpowers/
