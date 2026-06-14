@@ -5,6 +5,9 @@ declare
   m matches%rowtype;
   px numeric; pd numeric; po numeric; mult numeric;
 begin
+  if not is_admin() then
+    raise exception 'only admins can score matches';
+  end if;
   select * into m from matches where id = p_match;
   if m.home_score is null or m.away_score is null then
     raise exception 'match has no final score';
