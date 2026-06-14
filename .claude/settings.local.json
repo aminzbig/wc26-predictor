@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch(domain:www.kicktipp.com)",
+      "WebFetch(domain:www.superbru.com)",
+      "WebFetch(domain:play.fifa.com)",
+      "WebFetch(domain:www.uefa.com)",
+      "Bash(git -C /Users/amin/Desktop/WorldCupPrediction status)",
+      "WebFetch(domain:www.fifa.com)",
+      "Bash(/Users/amin/.claude/plugins/cache/claude-plugins-official/superpowers/5.1.0/skills/brainstorming/scripts/start-server.sh *)",
+      "Bash(brew --version)",
+      "Bash(curl -s https://nodejs.org/dist/index.json)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); lts=[r for r in d if r.get\\('lts'\\)]; r=lts[0]; print\\(r['version'], r['lts']\\)\")",
+      "Bash(git init *)",
+      "Bash(git add *)",
+      "Bash(git -c user.name=Amin -c user.email=amirivala@me.com commit -q -m 'Add WC26 Predictor design spec *)",
+      "Bash(git -c user.name=Amin -c user.email=amirivala@me.com commit -q -m 'Add GitHub hosting \\(Pages + Actions\\) to design spec *)",
+      "Bash(/Users/amin/.claude/plugins/cache/claude-plugins-official/superpowers/5.1.0/skills/brainstorming/scripts/stop-server.sh /Users/amin/Desktop/WorldCupPrediction/.superpowers/brainstorm/49906-1781472479)",
+      "Bash(git -c user.name=Amin -c user.email=amirivala@me.com commit -q -m 'Add WC26 Predictor implementation plan *)",
+      "Bash(git checkout *)",
+      "Bash(git check-ignore *)",
+      "Bash(git -c user.name=Amin -c user.email=amirivala@me.com commit -q -m 'feat: Supabase schema, RLS, scoring function, and WC26 seed \\(cloud-applied\\) *)",
+      "Bash(git -c user.name=Amin -c user.email=amirivala@me.com commit -m ' *)"
+    ]
+  }
+}
