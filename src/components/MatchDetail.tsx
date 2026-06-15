@@ -8,8 +8,25 @@ import { Flag } from './Flag'
 
 type PeoplePick = { name: string; flag_code: string | null; home_pred: number; away_pred: number; points: number | null }
 
+// How close a pick landed vs. the final score — mirrors the tiers in lib/scoring.ts.
+type Tier = 'exact' | 'diff' | 'outcome' | 'miss'
+const sgn = (n: number) => (n > 0 ? 1 : n < 0 ? -1 : 0)
+function resultTier(hp: number, ap: number, hs: number, as: number): Tier {
+  if (hp === hs && ap === as) return 'exact'
+  if (hp - ap === hs - as) return 'diff'
+  if (sgn(hp - ap) === sgn(hs - as)) return 'outcome'
+  return 'miss'
+}
+const TIER: Record<Tier, { label: string; cls: string }> = {
+  exact:   { label: 'Exact score', cls: 'text-green' },
+  diff:    { label: 'Goal diff',   cls: 'text-blue' },
+  outcome: { label: 'Outcome',     cls: 'text-orange' },
+  miss:    { label: 'Missed',      cls: 'text-ink/40' },
+}
+
 // Everyone's predictions for a match — only readable once it's locked/finished
-// (enforced by RLS). Shown at the bottom of the detail for those states.
+// (enforced by RLS). Once the match is scored this becomes a ranked leaderboard:
+// sorted by points, the leader gets the starburst, every pick gets a result tag.
 function PeoplePredictions({ match }: { match: Match }) {
   const [rows, setRows] = useState<PeoplePick[]>([])
   useEffect(() => {
@@ -29,17 +46,80 @@ function PeoplePredictions({ match }: { match: Match }) {
     return () => { active = false }
   }, [match.id, match.status, match.home_score])
   if (rows.length === 0) return null
+  return <PicksBoard rows={rows} match={match} />
+}
+
+// Presentational leaderboard — kept separate from the fetch so it can be rendered
+// in isolation. `rows` is expected pre-sorted by points desc, then name.
+function PicksBoard({ rows, match }: { rows: PeoplePick[]; match: Match }) {
+  const scored = match.status === 'finished' && match.home_score != null && match.away_score != null
+  const hs = match.home_score ?? 0, as = match.away_score ?? 0
+  const topPoints = scored ? Math.max(0, ...rows.map(r => r.points ?? 0)) : 0
+
+  // Dense competition ranking — equal scores share a place, next distinct score skips
+  // ahead (1, 2, 3, 3, 5…). rank = 1 + how many picks scored strictly more.
+  const ranked = rows.map((r) => {
+    const pts = r.points ?? 0
+    const rank = rows.filter(x => (x.points ?? 0) > pts).length + 1
+    return { ...r, rank, tier: scored ? resultTier(r.home_pred, r.away_pred, hs, as) : null }
+  })
+
   return (
-    <div className="mt-4 border-[3px] border-ink bg-paper text-ink p-2.5">
-      <div className="font-display text-[18px] uppercase tracking-wide leading-none mb-2">Everyone's picks</div>
-      {rows.map((r, i) => (
-        <div key={i} className="flex items-center gap-2 py-1.5 border-t-2 border-ink/10 first:border-t-0">
-          <Flag code={r.flag_code} label={r.name} size="sm" />
-          <div className="flex-1 font-display text-[15px] uppercase truncate">{r.name}</div>
-          <div className="font-display text-[16px] leading-none">{r.home_pred}–{r.away_pred}</div>
-          {r.points != null && <div className="font-sans font-900 text-[10px] uppercase tracking-wide bg-ink text-yellow px-1.5 py-0.5">+{r.points}</div>}
+    <div className="mt-4 border-[3px] border-ink bg-paper text-ink">
+      {/* Inverted header bar — poster-style boxed label */}
+      <div className="flex items-stretch justify-between bg-ink text-paper">
+        <div className="font-display text-[18px] uppercase tracking-wide leading-none px-2.5 py-2">Everyone's picks</div>
+        <div className="self-center px-2.5 font-sans font-900 text-[10px] uppercase tracking-widest text-yellow">
+          {scored ? `Final · ${rows.length}` : `Locked · ${rows.length}`}
         </div>
-      ))}
+      </div>
+
+      <div className="p-1.5">
+        {ranked.map((r, i) => {
+          const pts = r.points ?? 0
+          const isTop = scored && pts > 0 && pts === topPoints
+          return (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: Math.min(i * 0.04, 0.4), type: 'spring', stiffness: 320, damping: 26 }}
+              className={`flex items-center gap-2 px-1.5 py-1.5 border-t-2 border-ink/10 first:border-t-0 ${isTop ? 'bg-yellow border-t-yellow' : ''}`}
+            >
+              {/* Rank — leader wears the starburst, the rest a plain numeral */}
+              {scored && (
+                isTop ? (
+                  <div className="star-badge flex-none w-[32px] h-[32px] grid place-items-center bg-ink text-yellow font-display text-[15px] leading-none">{r.rank}</div>
+                ) : (
+                  <div className="flex-none w-[32px] text-center font-display text-[22px] leading-none text-ink/55">{r.rank}</div>
+                )
+              )}
+
+              <Flag code={r.flag_code} label={r.name} size="sm" />
+
+              <div className="min-w-0 flex-1">
+                <div className="font-display text-[15px] uppercase truncate leading-none">{r.name}</div>
+                {scored && r.tier && (
+                  <div className="mt-1 text-[9px] font-sans font-900 uppercase tracking-widest leading-none">
+                    <span className="opacity-60">{r.home_pred}–{r.away_pred}</span>
+                    <span className={`ml-1.5 ${isTop ? (r.tier === 'miss' ? 'text-ink/40' : 'text-ink') : TIER[r.tier].cls}`}>· {TIER[r.tier].label}</span>
+                  </div>
+                )}
+              </div>
+
+              {scored ? (
+                /* The hero figure — big inverted points block */
+                <div className={`flex-none grid place-items-center w-[50px] h-[40px] border-2 border-ink ${pts > 0 ? 'bg-ink' : 'bg-transparent'}`}>
+                  <div className={`font-display text-[22px] leading-none ${pts > 0 ? (isTop ? 'text-yellow' : 'text-paper') : 'text-ink/40'}`}>{pts}</div>
+                  <div className={`mt-0.5 font-sans font-900 text-[6px] uppercase tracking-[0.2em] leading-none ${pts > 0 ? (isTop ? 'text-yellow/70' : 'text-paper/60') : 'text-ink/30'}`}>pts</div>
+                </div>
+              ) : (
+                <div className="font-display text-[16px] leading-none">{r.home_pred}–{r.away_pred}</div>
+              )}
+            </motion.div>
+          )
+        })}
+      </div>
     </div>
   )
 }

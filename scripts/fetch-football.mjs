@@ -22,7 +22,8 @@ const api = async path => {
 const norm = s => (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z]/g, '')
 const ALIAS = {
   unitedstates: 'usa', czechia: 'czechrepublic', korearepublic: 'southkorea',
-  cotedivoire: 'ivorycoast', caboverde: 'capeverde', congodr: 'drcongo',
+  cotedivoire: 'ivorycoast', caboverde: 'capeverde', capeverdeislands: 'capeverde',
+  congodr: 'drcongo',
   democraticrepublicofcongo: 'drcongo', turkiye: 'turkey',
   bosniaandherzegovina: 'bosniaherzegovina',
 }
