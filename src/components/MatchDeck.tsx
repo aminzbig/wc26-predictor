@@ -39,7 +39,7 @@ export function MatchDeck({ matches, index, setIndex, byMatch, onSave, onOpen }:
   const variants = {
     enter: { y: -18, scale: 0.94, opacity: 0.5 },
     center: { y: 0, scale: 1, opacity: 1 },
-    exit: (d: number) => ({ x: d > 0 ? -340 : 340, opacity: 0, rotate: d > 0 ? -8 : 8 }),
+    exit: (d: number) => ({ x: d > 0 ? 340 : -340, opacity: 0, rotate: d > 0 ? 8 : -8 }),
   }
 
   return (
@@ -78,8 +78,8 @@ export function MatchDeck({ matches, index, setIndex, byMatch, onSave, onOpen }:
             onDragStart={() => { dragged.current = true }}
             onDragEnd={(_e, info) => {
               const { offset, velocity } = info
-              if (offset.x < -110 || velocity.x < -500) goNext()
-              else if (offset.x > 110 || velocity.x > 500) goPrev()
+              if (offset.x > 110 || velocity.x > 500) goNext()        // swipe right → next
+              else if (offset.x < -110 || velocity.x < -500) goPrev() // swipe left → previous
             }}
             className={`${CARD_POS} z-10 cursor-grab active:cursor-grabbing`}
             data-testid="active-card"
