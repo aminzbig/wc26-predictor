@@ -122,6 +122,14 @@ export function MatchCard({ match, prediction, onSave, onOpen }:
         {state === 'finished' && <span className="shrink-0">FT</span>}
       </div>
 
+      {/* Live score banner — above the teams, below the game info */}
+      {live && (
+        <div className="shrink-0 flex items-baseline justify-center gap-2 mt-1.5 border-y-2 border-ink/20 py-1">
+          <span className="font-display text-[clamp(22px,4.6vh,34px)] leading-none">{match.live_home} <span className="opacity-40">–</span> {match.live_away}</span>
+          <span className="font-sans font-900 text-[9px] uppercase tracking-widest opacity-80">Live{match.live_minute ? ` ${match.live_minute}'` : ''}</span>
+        </div>
+      )}
+
       {/* Teams + scores — fill and center, scaling to the available height */}
       <div className="flex-1 min-h-0 flex flex-col justify-center gap-[clamp(6px,2.4vh,24px)] py-2">
         <div className="flex items-center gap-2.5">
@@ -129,14 +137,7 @@ export function MatchCard({ match, prediction, onSave, onOpen }:
             sub={state !== 'open' && prediction ? `you: ${prediction.home_pred}` : undefined} />
           <Sbox v={state === 'finished' ? match.home_score! : hp} set={editable ? setHp : undefined} dim={live} />
         </div>
-        {live ? (
-          <div className="text-center">
-            <div className="font-display text-[clamp(24px,5vh,36px)] leading-none">{match.live_home} <span className="opacity-40">–</span> {match.live_away}</div>
-            <div className="font-sans font-900 text-[9px] uppercase tracking-widest mt-1 opacity-80">Live{match.live_minute ? ` · ${match.live_minute}'` : ''}</div>
-          </div>
-        ) : (
-          <div className="font-display text-[12px] uppercase tracking-[0.3em] opacity-40 text-center">vs</div>
-        )}
+        <div className="font-display text-[12px] uppercase tracking-[0.3em] opacity-40 text-center">vs</div>
         <div className="flex items-center gap-2.5">
           <Team code={match.away_code} label={match.away_label}
             sub={state !== 'open' && prediction ? `you: ${prediction.away_pred}` : undefined} />
