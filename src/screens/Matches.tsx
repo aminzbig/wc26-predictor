@@ -1,44 +1,110 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useMatches } from '../hooks/useMatches'
 import { usePredictions } from '../hooks/usePredictions'
-import { MatchCard } from '../components/MatchCard'
+import { MatchDeck } from '../components/MatchDeck'
+import { MatchDetail } from '../components/MatchDetail'
 import { matchState } from '../lib/matchState'
+import type { Match } from '../lib/types'
 
-type Filter = 'upcoming' | 'locked' | 'finished'
+type Filter = 'all' | 'upcoming' | 'finished'
+
+function closestToNow(list: Match[]) {
+  if (list.length === 0) return 0
+  let best = 0, bestDelta = Infinity
+  const now = Date.now()
+  list.forEach((m, i) => {
+    const d = Math.abs(new Date(m.kickoff_at).getTime() - now)
+    if (d < bestDelta) { bestDelta = d; best = i }
+  })
+  return best
+}
 
 export function Matches() {
   const { matches, loading } = useMatches()
   const { byMatch, save } = usePredictions()
-  const [filter, setFilter] = useState<Filter>('upcoming')
+  const [filter, setFilter] = useState<Filter>('all')
+  const [index, setIndex] = useState(-1)
+  const [selected, setSelected] = useState<Match | null>(null)
 
-  const shown = useMemo(() => matches.filter(m => {
+  // Sorted ascending by kickoff.
+  const sorted = useMemo(
+    () => [...matches].sort((a, b) => new Date(a.kickoff_at).getTime() - new Date(b.kickoff_at).getTime()),
+    [matches],
+  )
+
+  const shown = useMemo(() => sorted.filter(m => {
+    if (filter === 'all') return true
     const s = matchState(m)
-    if (filter === 'upcoming') return s === 'open'
-    if (filter === 'locked') return s === 'locked'
+    if (filter === 'upcoming') return s !== 'finished'
     return s === 'finished'
-  }), [matches, filter])
+  }), [sorted, filter])
+
+  // Set initial index once when matches first load (don't reset on realtime reloads).
+  useEffect(() => {
+    if (index === -1 && shown.length > 0) setIndex(closestToNow(shown))
+  }, [shown, index])
+
+  // Keep index in range when filter changes / list shrinks.
+  useEffect(() => {
+    if (index >= shown.length) setIndex(Math.max(0, shown.length - 1))
+  }, [shown.length, index])
+
+  const onFilter = (f: Filter) => {
+    setFilter(f)
+    // recompute a sensible position for the new filtered list
+    const next = sorted.filter(m => {
+      if (f === 'all') return true
+      const s = matchState(m)
+      if (f === 'upcoming') return s !== 'finished'
+      return s === 'finished'
+    })
+    setIndex(closestToNow(next))
+  }
 
   if (loading) return <p className="font-sans font-700 text-ink/60 uppercase text-sm tracking-wide">Loading matches…</p>
+
+  const safeIndex = Math.max(0, Math.min(index, shown.length - 1))
+  // Re-derive the open match from the fresh list so realtime score/odds updates flow in.
+  const selectedLive = selected ? (sorted.find(m => m.id === selected.id) ?? selected) : null
+
   return (
     <>
       {/* Poster header */}
       <div className="bg-ink text-paper px-3 py-2 mb-3 flex justify-between items-center">
         <h1 className="font-display text-[20px] uppercase tracking-wide">Matches</h1>
+        <span className="font-sans font-900 text-[10px] uppercase tracking-widest text-yellow">Swipe or tap</span>
       </div>
 
-      {/* Filter buttons */}
-      <div className="flex gap-0 mb-4 border-[3px] border-ink">
-        {(['upcoming', 'locked', 'finished'] as Filter[]).map(f =>
-          <button key={f} onClick={() => setFilter(f)}
+      {/* Filter chips */}
+      <div className="flex gap-0 mb-5 border-[3px] border-ink">
+        {(['all', 'upcoming', 'finished'] as Filter[]).map(f =>
+          <button key={f} onClick={() => onFilter(f)}
             className={`flex-1 font-display text-[13px] uppercase tracking-wide py-2 border-r-[3px] border-ink last:border-r-0 ${filter === f ? 'bg-ink text-paper' : 'bg-paper text-ink'}`}>
-            {f === 'upcoming' ? 'Open' : f}
+            {f}
           </button>)}
       </div>
 
-      {shown.length === 0 && <p className="font-sans font-700 text-ink/60 uppercase text-sm tracking-wide">No matches here.</p>}
-      {shown.map(m =>
-        <MatchCard key={m.id} match={m} prediction={byMatch[m.id]}
-          onSave={(h, a) => save(m.id, h, a)} />)}
+      {shown.length === 0
+        ? <p className="font-sans font-700 text-ink/60 uppercase text-sm tracking-wide">No matches here.</p>
+        : (
+          <MatchDeck
+            matches={shown}
+            index={safeIndex}
+            setIndex={setIndex}
+            byMatch={byMatch}
+            onSave={save}
+            onOpen={setSelected}
+          />
+        )}
+
+      {selectedLive && (
+        <MatchDetail
+          match={selectedLive}
+          prediction={byMatch[selectedLive.id]}
+          onSave={(h, a) => save(selectedLive.id, h, a)}
+          onClose={() => setSelected(null)}
+        />
+      )}
     </>
   )
 }

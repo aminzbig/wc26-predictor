@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { motion } from 'framer-motion'
 import { Lock } from 'lucide-react'
 import type { Match, Prediction } from '../lib/types'
 import { matchState } from '../lib/matchState'
@@ -18,6 +19,8 @@ function Sbox({ v, set, real: _real }: { v: number; set?: (n: number) => void; r
     <input
       type="number" min={0} value={v} disabled={!set}
       onChange={e => set?.(Math.max(0, +e.target.value))}
+      onClick={e => e.stopPropagation()}
+      onPointerDown={e => e.stopPropagation()}
       className={`w-[36px] h-[38px] text-center font-display text-[22px] border-[3px] border-ink bg-paper text-ink outline-none flex-none ${!set ? 'opacity-90' : ''}`}
     />
   )
@@ -56,8 +59,8 @@ function OddsBar({ m }: { m: Match }) {
   )
 }
 
-export function MatchCard({ match, prediction, onSave }:
-  { match: Match; prediction?: Prediction; onSave: (h: number, a: number) => Promise<void> }) {
+export function MatchCard({ match, prediction, onSave, onOpen }:
+  { match: Match; prediction?: Prediction; onSave: (h: number, a: number) => Promise<void>; onOpen?: () => void }) {
   const state = matchState(match)
   const [hp, setHp] = useState(prediction?.home_pred ?? 0)
   const [ap, setAp] = useState(prediction?.away_pred ?? 0)
@@ -67,7 +70,10 @@ export function MatchCard({ match, prediction, onSave }:
   const colorClass = panelColor(match.match_no ?? 0)
 
   return (
-    <div className={`${colorClass} border-[3px] border-ink p-3 mb-3.5 relative`}>
+    <motion.div
+      onClick={onOpen}
+      whileTap={onOpen ? { scale: 0.985 } : undefined}
+      className={`${colorClass} border-[3px] border-ink p-3 mb-3.5 relative ${onOpen ? 'cursor-pointer' : ''}`}>
       {/* Starburst points badge for finished matches */}
       {state === 'finished' && prediction?.points_awarded != null && (
         <div
@@ -104,7 +110,8 @@ export function MatchCard({ match, prediction, onSave }:
       {state === 'open' && (
         <button
           disabled={saving}
-          onClick={async () => { setSaving(true); try { await onSave(hp, ap) } finally { setSaving(false) } }}
+          onPointerDown={e => e.stopPropagation()}
+          onClick={async e => { e.stopPropagation(); setSaving(true); try { await onSave(hp, ap) } finally { setSaving(false) } }}
           className="w-full mt-3 bg-ink text-paper font-display text-[14px] uppercase tracking-widest py-2.5 text-center disabled:opacity-50"
         >
           {prediction ? 'Update prediction' : 'Lock prediction'}
@@ -115,6 +122,6 @@ export function MatchCard({ match, prediction, onSave }:
           <Lock size={11} /> Prediction locked
         </div>
       )}
-    </div>
+    </motion.div>
   )
 }

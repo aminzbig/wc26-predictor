@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { motion } from 'framer-motion'
 import { Protected } from './components/Protected'
 import { BottomNav } from './components/BottomNav'
 import { Login } from './screens/Login'
@@ -11,7 +12,12 @@ import { AdminPlayers } from './screens/admin/AdminPlayers'
 import { AdminSettings } from './screens/admin/AdminSettings'
 
 const Shell = ({ children }: { children: React.ReactNode }) =>
-  <div className="max-w-md mx-auto bg-paper px-4 pt-4 pb-24 min-h-full">{children}<BottomNav /></div>
+  <div className="max-w-md mx-auto bg-paper px-4 pt-4 pb-24 min-h-full">
+    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25, ease: 'easeOut' }}>
+      {children}
+    </motion.div>
+    <BottomNav />
+  </div>
 
 export default function App() {
   const base = import.meta.env.BASE_URL
