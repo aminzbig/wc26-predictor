@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { PALETTE, colorClass, validBody, type SocialColor, type MatchLite } from '../lib/social'
+import { PALETTE, colorClass, validBody, matchLabel, type SocialColor, type MatchLite } from '../lib/social'
 
 const MAX = 280
 
@@ -8,7 +8,6 @@ export function SocialComposer({ matchList, onPost }: {
   onPost: (body: string, color: SocialColor, matchId: string | null) => void
 }) {
   const [body, setBody] = useState('')
-  // Default color derived from text length so it varies without Math.random.
   const [color, setColor] = useState<SocialColor>('orange')
   const [matchId, setMatchId] = useState<string>('')
   const [pickMatch, setPickMatch] = useState(false)
@@ -53,7 +52,7 @@ export function SocialComposer({ matchList, onPost }: {
           <option value="">No match</option>
           {matchList.map(m => (
             <option key={m.id} value={m.id}>
-              {(m.home_code ?? m.home_label ?? '?').toUpperCase()}–{(m.away_code ?? m.away_label ?? '?').toUpperCase()}
+              {matchLabel(m)}
             </option>
           ))}
         </select>
