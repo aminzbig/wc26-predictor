@@ -210,10 +210,11 @@ function FormationPitch({ label, fallback, lineup, squad }: {
               <div className="text-[10px] font-sans font-700 uppercase tracking-wider opacity-80">
                 {open.position}{open.age != null ? ` · AGE ${open.age}` : ''}
               </div>
-              {(open.current || open.prev) && (
-                <div className="text-[9px] font-sans font-700 uppercase tracking-wider opacity-70 truncate">
-                  {open.current ? `NOW: ${open.current}` : ''}{open.current && open.prev ? ' · ' : ''}{open.prev ? `PREV: ${open.prev}` : ''}
-                </div>
+              {open.current && (
+                <div className="text-[9px] font-sans font-700 uppercase tracking-wider opacity-70 truncate">NOW: {open.current}</div>
+              )}
+              {open.prev && (
+                <div className="text-[9px] font-sans font-700 uppercase tracking-wider opacity-70 truncate">PREV: {open.prev}</div>
               )}
             </div>
             <button
