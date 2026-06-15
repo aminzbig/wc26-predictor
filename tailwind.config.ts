@@ -15,6 +15,10 @@ export default {
       fontFamily: {
         display: ['Anton', 'sans-serif'],
         sans:    ['Archivo', 'system-ui', 'sans-serif'],
+        hand:    ['Caveat', 'cursive'],
+        mono:    ['"Space Mono"', 'ui-monospace', 'monospace'],
+        serif:   ['"Playfair Display"', 'Georgia', 'serif'],
+        pixel:   ['VT323', 'ui-monospace', 'monospace'],
       },
     },
   },

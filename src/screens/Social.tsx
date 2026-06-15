@@ -4,7 +4,7 @@ import { SocialCard } from '../components/SocialCard'
 import { useSocialPosts } from '../hooks/useSocialPosts'
 
 export function Social() {
-  const { hero, feed, loading, me, isAdmin, matchList, post, react, remove } = useSocialPosts()
+  const { hero, feed, loading, me, isAdmin, matchList, mine, post, react, remove } = useSocialPosts()
   const canDelete = (authorId: string) => authorId === me || isAdmin
 
   return (
@@ -20,6 +20,7 @@ export function Social() {
           <SocialHero
             view={hero}
             canDelete={!!hero && canDelete(hero.author_id)}
+            tapped={hero ? mine[hero.id] ?? [] : []}
             onReact={k => hero && react(hero.id, k)}
             onDelete={() => hero && remove(hero.id)}
           />
@@ -36,6 +37,7 @@ export function Social() {
                 key={v.id}
                 view={v}
                 canDelete={canDelete(v.author_id)}
+                tapped={mine[v.id] ?? []}
                 onReact={k => react(v.id, k)}
                 onDelete={() => remove(v.id)}
               />

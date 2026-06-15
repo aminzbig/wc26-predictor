@@ -100,7 +100,7 @@ export function Matches() {
           {shown.length === 0
             ? <p className="font-sans font-700 text-ink/60 uppercase text-sm tracking-wide">No matches here.</p>
             : view === 'grid'
-              ? <MatchGrid matches={shown} byMatch={byMatch} onOpen={setSelected} />
+              ? <MatchGrid matches={shown} byMatch={byMatch} onOpen={setSelected} focusId={shown[safeIndex]?.id} />
               : (
                 <MatchDeck
                   matches={shown}

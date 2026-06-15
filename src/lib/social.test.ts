@@ -1,12 +1,13 @@
 import { describe, expect, test } from 'vitest'
 import {
   REACTIONS, hottest, bump, relativeTime, colorClass, isLight,
-  validBody, validColor, matchLabel, toView, upsertPost, removePost,
+  validBody, validColor, validFont, fontClass, addReaction, matchLabel,
+  toView, upsertPost, removePost,
   type SocialPostRow,
 } from './social'
 
 const row = (over: Partial<SocialPostRow> = {}): SocialPostRow => ({
-  id: 'a', author_id: 'u1', body: 'hi', color: 'orange', match_id: null,
+  id: 'a', author_id: 'u1', body: 'hi', color: 'orange', font: 'sans', match_id: null,
   heart_count: 0, up_count: 0, down_count: 0, sandal_count: 0, dead_count: 0,
   created_at: '2026-06-15T00:00:00.000Z', ...over,
 })
@@ -45,6 +46,18 @@ describe('social helpers', () => {
     expect(validBody('x'.repeat(281))).toBe(false)
     expect(validColor('green')).toBe(true)
     expect(validColor('magenta')).toBe(false)
+  })
+  test('validFont checks the 6 fonts; fontClass maps to tailwind classes', () => {
+    expect(validFont('pixel')).toBe(true)
+    expect(validFont('comic')).toBe(false)
+    expect(fontClass('sans')).toBe('font-sans')
+    expect(fontClass('impact')).toBe('font-display')
+    expect(fontClass('pixel')).toBe('font-pixel')
+  })
+  test('addReaction appends only once (your tapped set)', () => {
+    expect(addReaction([], 'heart')).toEqual(['heart'])
+    expect(addReaction(['heart'], 'dead')).toEqual(['heart', 'dead'])
+    expect(addReaction(['heart'], 'heart')).toEqual(['heart'])
   })
   test('matchLabel uppercases codes', () => {
     expect(matchLabel({ id: 'm', home_code: 'br', away_code: 'ar', home_label: null, away_label: null }))

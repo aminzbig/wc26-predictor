@@ -1,11 +1,13 @@
 export type Reaction = 'heart' | 'up' | 'down' | 'sandal' | 'dead'
 export type SocialColor = 'orange' | 'green' | 'blue' | 'yellow' | 'red' | 'paper'
+export type SocialFont = 'sans' | 'impact' | 'hand' | 'mono' | 'serif' | 'pixel'
 
 export interface SocialPostRow {
   id: string
   author_id: string
   body: string
   color: SocialColor
+  font: SocialFont
   match_id: string | null
   heart_count: number
   up_count: number
@@ -25,6 +27,8 @@ export interface PostView extends SocialPostRow {
   author_name: string
   author_flag: string | null
   match_label: string | null
+  match_home: string | null
+  match_away: string | null
 }
 
 type CountCol = 'heart_count' | 'up_count' | 'down_count' | 'sandal_count' | 'dead_count'
@@ -74,8 +78,31 @@ export const PALETTE: SocialColor[] = ['orange', 'green', 'blue', 'yellow', 'red
 export const colorClass = (c: SocialColor): string => COLOR_CLASS[c]
 export const isLight = (c: SocialColor): boolean => c === 'blue' || c === 'red'
 
+const FONT_CLASS: Record<SocialFont, string> = {
+  sans:   'font-sans',
+  impact: 'font-display',
+  hand:   'font-hand',
+  mono:   'font-mono',
+  serif:  'font-serif',
+  pixel:  'font-pixel',
+}
+export const FONTS: { key: SocialFont; label: string }[] = [
+  { key: 'sans',   label: 'Archivo' },
+  { key: 'impact', label: 'Anton' },
+  { key: 'hand',   label: 'Caveat' },
+  { key: 'mono',   label: 'Mono' },
+  { key: 'serif',  label: 'Playfair' },
+  { key: 'pixel',  label: 'Pixel' },
+]
+export const fontClass = (f: SocialFont): string => FONT_CLASS[f]
+export const validFont = (f: string): f is SocialFont => f in FONT_CLASS
+
 export const validBody = (s: string): boolean => s.trim().length >= 1 && s.length <= 280
 export const validColor = (c: string): c is SocialColor => (PALETTE as string[]).includes(c)
+
+// Per-device "reactions I tapped" tracking (no server-side per-user state).
+export const addReaction = (arr: Reaction[], key: Reaction): Reaction[] =>
+  arr.includes(key) ? arr : [...arr, key]
 
 export function matchLabel(m: MatchLite): string {
   const h = (m.home_code ?? m.home_label ?? '?').toUpperCase()
@@ -95,6 +122,8 @@ export function toView(
     author_name: a?.name ?? 'Someone',
     author_flag: a?.flag_code ?? null,
     match_label: m ? matchLabel(m) : null,
+    match_home: m?.home_code ?? null,
+    match_away: m?.away_code ?? null,
   }
 }
 

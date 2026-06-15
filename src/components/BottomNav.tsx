@@ -24,15 +24,6 @@ export function BottomNav() {
           Matches
         </>}
       </NavLink>
-      <NavLink to="/social" className={itemClass('border-r-[3px] border-ink')}>
-        {({ isActive }) => <>
-          {isActive && <Active />}
-          <motion.span animate={{ scale: isActive ? 1.15 : 1 }} transition={{ type: 'spring', stiffness: 400, damping: 20 }}>
-            <MessageCircle size={18} className={isActive ? 'text-paper' : 'text-ink'} />
-          </motion.span>
-          Social
-        </>}
-      </NavLink>
       <NavLink to="/ranking" className={itemClass('border-r-[3px] border-ink')}>
         {({ isActive }) => <>
           {isActive && <Active />}
@@ -40,6 +31,15 @@ export function BottomNav() {
             <Trophy size={18} className={isActive ? 'text-paper' : 'text-ink'} />
           </motion.span>
           Ranking
+        </>}
+      </NavLink>
+      <NavLink to="/social" className={itemClass('border-r-[3px] border-ink')}>
+        {({ isActive }) => <>
+          {isActive && <Active />}
+          <motion.span animate={{ scale: isActive ? 1.15 : 1 }} transition={{ type: 'spring', stiffness: 400, damping: 20 }}>
+            <MessageCircle size={18} className={isActive ? 'text-paper' : 'text-ink'} />
+          </motion.span>
+          Social
         </>}
       </NavLink>
       <NavLink to="/me" className={itemClass(player?.is_admin ? 'border-r-[3px] border-ink' : '')}>

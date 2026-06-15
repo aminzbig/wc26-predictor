@@ -2,16 +2,24 @@ import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import {
-  upsertPost, removePost, bump, toView,
+  upsertPost, removePost, bump, toView, addReaction,
   type SocialPostRow, type PlayerLite, type MatchLite, type PostView,
-  type Reaction, type SocialColor,
+  type Reaction, type SocialColor, type SocialFont,
 } from '../lib/social'
+
+// "Reactions I tapped" live only on this device — we don't track per-user reactions
+// server-side (counts are unlimited-tap). Persisted so highlights survive a reload.
+const MINE_KEY = 'wc26-social-reactions'
+function loadMine(): Record<string, Reaction[]> {
+  try { return JSON.parse(localStorage.getItem(MINE_KEY) ?? '{}') } catch { return {} }
+}
 
 export function useSocialPosts() {
   const { player } = useAuth()
   const [rows, setRows] = useState<SocialPostRow[]>([])
   const [players, setPlayers] = useState<Record<string, PlayerLite>>({})
   const [matches, setMatches] = useState<Record<string, MatchLite>>({})
+  const [mine, setMine] = useState<Record<string, Reaction[]>>(loadMine)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -51,16 +59,21 @@ export function useSocialPosts() {
     [rows, players, matches],
   )
 
-  async function post(body: string, color: SocialColor, matchId: string | null) {
+  async function post(body: string, color: SocialColor, font: SocialFont, matchId: string | null) {
     if (!player) return
     await supabase.from('social_posts').insert({
-      author_id: player.id, body, color, match_id: matchId,
+      author_id: player.id, body, color, font, match_id: matchId,
     })
     // INSERT echo via realtime adds the card.
   }
 
   async function react(postId: string, key: Reaction) {
     setRows(prev => prev.map(r => (r.id === postId ? bump(r, key) : r))) // optimistic
+    setMine(prev => {
+      const next = { ...prev, [postId]: addReaction(prev[postId] ?? [], key) }
+      try { localStorage.setItem(MINE_KEY, JSON.stringify(next)) } catch { /* ignore quota */ }
+      return next
+    })
     await supabase.rpc('react_to_post', { p_id: postId, kind: key })
     // UPDATE echo reconciles the true count.
   }
@@ -79,6 +92,7 @@ export function useSocialPosts() {
     me: player?.id ?? null,
     isAdmin: player?.is_admin ?? false,
     matchList,
+    mine,
     post, react, remove,
   }
 }

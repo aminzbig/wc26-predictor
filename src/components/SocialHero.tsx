@@ -2,14 +2,16 @@ import { useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { X } from 'lucide-react'
 import { Flag } from './Flag'
+import { MatchFlags } from './MatchFlags'
 import { ReactionBar } from './ReactionBar'
-import { REACTIONS, colorClass, isLight, relativeTime, type PostView, type Reaction } from '../lib/social'
+import { REACTIONS, colorClass, fontClass, isLight, relativeTime, type PostView, type Reaction } from '../lib/social'
 
 interface Burst { id: number; emoji: string; x: number }
 
-export function SocialHero({ view, canDelete, onReact, onDelete }: {
+export function SocialHero({ view, canDelete, tapped, onReact, onDelete }: {
   view: PostView | null
   canDelete: boolean
+  tapped: Reaction[]
   onReact: (key: Reaction) => void
   onDelete: () => void
 }) {
@@ -60,11 +62,7 @@ export function SocialHero({ view, canDelete, onReact, onDelete }: {
         <div className="flex items-center gap-2.5">
           <Flag code={view.author_flag} label={view.author_name} size="md" />
           <span className="font-display uppercase text-[18px] tracking-wide">{view.author_name}</span>
-          {view.match_label && (
-            <span className="border-2 border-ink rounded-full px-2.5 py-0.5 text-[10px] font-900 uppercase bg-paper text-ink">
-              ⚽ {view.match_label}
-            </span>
-          )}
+          {view.match_label && <MatchFlags home={view.match_home} away={view.match_away} />}
           <span className={`ml-auto text-[12px] font-900 ${light ? 'opacity-80' : 'opacity-70'}`}>
             {relativeTime(view.created_at)}
           </span>
@@ -72,8 +70,8 @@ export function SocialHero({ view, canDelete, onReact, onDelete }: {
             <button type="button" aria-label="delete" onClick={onDelete}><X size={16} /></button>
           )}
         </div>
-        <p className="text-[23px] font-900 leading-[1.2] tracking-[-0.4px] my-4">{view.body}</p>
-        <ReactionBar row={view} color={view.color} size="hero" onReact={handleReact} />
+        <p className={`${fontClass(view.font)} text-[23px] font-900 leading-[1.2] tracking-[-0.4px] my-4`}>{view.body}</p>
+        <ReactionBar row={view} color={view.color} size="hero" tapped={tapped} onReact={handleReact} />
       </div>
     </div>
   )
