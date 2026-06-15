@@ -8,8 +8,8 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "vitest run",
-    "test:watch": "vitest"
+    "test": "NODE_OPTIONS=--experimental-require-module vitest run",
+    "test:watch": "NODE_OPTIONS=--experimental-require-module vitest"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.108.1",
