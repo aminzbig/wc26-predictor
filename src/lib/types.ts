@@ -11,6 +11,7 @@ export interface Match {
   home_label: string | null; away_label: string | null
   kickoff_at: string; home_score: number | null; away_score: number | null
   multiplier: number; status: 'scheduled' | 'finished'
+  prob_home: number | null; prob_draw: number | null; prob_away: number | null
 }
 export interface Prediction {
   id: string; player_id: string; match_id: string

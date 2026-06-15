@@ -1,4 +1,4 @@
-name: Auto-score matches
+name: Sync results &amp; odds
 on:
   schedule:
     - cron: '*/30 * * * *'   # every 30 minutes
@@ -21,3 +21,8 @@ jobs:
         env:
           SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      - run: node scripts/fetch-odds.mjs
+        env:
+          SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}

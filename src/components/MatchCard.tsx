@@ -35,6 +35,27 @@ function Team({ code, label, sub }: { code: string | null; label: string | null;
   )
 }
 
+// Bookmaker win-probability bar (populated by the odds cron). Hidden if no data
+// or the match is finished. Boxed on paper so it stays legible on any panel color.
+function OddsBar({ m }: { m: Match }) {
+  if (m.status === 'finished' || m.prob_home == null) return null
+  const ph = m.prob_home, pd = m.prob_draw ?? 0, pa = m.prob_away ?? 0
+  const h = (m.home_label ?? 'Home').slice(0, 3).toUpperCase()
+  const a = (m.away_label ?? 'Away').slice(0, 3).toUpperCase()
+  return (
+    <div className="mt-2.5 border-[2px] border-ink bg-paper text-ink p-1.5">
+      <div className="flex justify-between text-[9px] font-sans font-900 uppercase tracking-wider mb-1">
+        <span>{h} {ph}%</span><span>Draw {pd}%</span><span>{a} {pa}%</span>
+      </div>
+      <div className="flex h-2">
+        <div className="bg-ink" style={{ width: `${ph}%` }} />
+        <div className="bg-ink/40" style={{ width: `${pd}%` }} />
+        <div className="bg-ink/70" style={{ width: `${pa}%` }} />
+      </div>
+    </div>
+  )
+}
+
 export function MatchCard({ match, prediction, onSave }:
   { match: Match; prediction?: Prediction; onSave: (h: number, a: number) => Promise<void> }) {
   const state = matchState(match)
@@ -76,6 +97,8 @@ export function MatchCard({ match, prediction, onSave }:
           sub={state !== 'open' && prediction ? `you: ${prediction.away_pred}` : undefined} />
         <Sbox v={state === 'finished' ? match.away_score! : ap} set={editable ? setAp : undefined} real={state === 'finished'} />
       </div>
+
+      <OddsBar m={match} />
 
       {/* Lock button */}
       {state === 'open' && (
