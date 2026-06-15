@@ -4,6 +4,27 @@ import type { Match, Prediction } from '../lib/types'
 import { matchState } from '../lib/matchState'
 import { Flag } from './Flag'
 
+// Module-level components: defining these inside MatchCard would give them a new
+// identity each render, remounting the score <input> and dropping focus after
+// one keystroke.
+function Sbox({ v, set, real }: { v: number; set?: (n: number) => void; real?: boolean }) {
+  return (
+    <input type="number" min={0} value={v} disabled={!set}
+      onChange={e => set?.(Math.max(0, +e.target.value))}
+      className={`w-[38px] h-[42px] text-center font-bold text-lg rounded-xl bg-surface shadow-neu-inset ${real ? 'text-bright' : 'text-accent'} ${!set ? 'opacity-90' : ''}`} />
+  )
+}
+
+function Team({ code, label, sub }: { code: string | null; label: string | null; sub?: string }) {
+  return (
+    <div className="flex items-center gap-3 flex-1">
+      <Flag code={code} label={label} />
+      <div className="font-semibold text-[15px] text-txt">{label}
+        {sub && <small className="block text-[10.5px] text-muted">{sub}</small>}</div>
+    </div>
+  )
+}
+
 export function MatchCard({ match, prediction, onSave }:
   { match: Match; prediction?: Prediction; onSave: (h: number, a: number) => Promise<void> }) {
   const state = matchState(match)
@@ -11,18 +32,6 @@ export function MatchCard({ match, prediction, onSave }:
   const [ap, setAp] = useState(prediction?.away_pred ?? 0)
   const [saving, setSaving] = useState(false)
   const editable = state === 'open'
-
-  const Sbox = ({ v, set, real }: { v: number; set?: (n: number) => void; real?: boolean }) =>
-    <input type="number" min={0} value={v} disabled={!set}
-      onChange={e => set?.(Math.max(0, +e.target.value))}
-      className={`w-[38px] h-[42px] text-center font-bold text-lg rounded-xl bg-surface shadow-neu-inset ${real ? 'text-bright' : 'text-accent'} ${!set ? 'opacity-90' : ''}`} />
-
-  const Team = ({ code, label, sub }: { code: string | null; label: string | null; sub?: string }) =>
-    <div className="flex items-center gap-3 flex-1">
-      <Flag code={code} label={label} />
-      <div className="font-semibold text-[15px] text-txt">{label}
-        {sub && <small className="block text-[10.5px] text-muted">{sub}</small>}</div>
-    </div>
 
   return (
     <div className="bg-surface rounded-neu shadow-neu p-4 mb-3.5">
