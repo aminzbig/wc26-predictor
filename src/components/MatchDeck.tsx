@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import type { Match, Prediction } from '../lib/types'
@@ -20,6 +20,9 @@ export function MatchDeck({ matches, index, setIndex, byMatch, onSave, onOpen }:
 }) {
   // direction: +1 means moving forward (next), -1 backward (prev)
   const [dir, setDir] = useState(0)
+  // distinguishes a real drag from a tap: set on drag start, checked on the
+  // click that fires afterwards (framer doesn't suppress the child's onClick).
+  const dragged = useRef(false)
 
   const clamp = (n: number) => Math.max(0, Math.min(matches.length - 1, n))
   const goNext = () => { if (index < matches.length - 1) { setDir(1); setIndex(clamp(index + 1)) } }
@@ -71,18 +74,21 @@ export function MatchDeck({ matches, index, setIndex, byMatch, onSave, onOpen }:
             drag="x"
             dragConstraints={{ left: 0, right: 0 }}
             dragElastic={0.6}
+            onPointerDownCapture={() => { dragged.current = false }}
+            onDragStart={() => { dragged.current = true }}
             onDragEnd={(_e, info) => {
               const { offset, velocity } = info
               if (offset.x < -110 || velocity.x < -500) goNext()
               else if (offset.x > 110 || velocity.x > 500) goPrev()
             }}
             className={`${CARD_POS} z-10 cursor-grab active:cursor-grabbing`}
+            data-testid="active-card"
           >
             <MatchCard
               match={active}
               prediction={byMatch[active.id]}
               onSave={(h, a) => onSave(active.id, h, a)}
-              onOpen={() => onOpen(active)}
+              onOpen={() => { if (!dragged.current) onOpen(active) }}
             />
           </motion.div>
         </AnimatePresence>

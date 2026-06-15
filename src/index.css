@@ -15,3 +15,8 @@ body {
 .star-badge {
   clip-path: polygon(50% 0%,61% 18%,82% 12%,79% 34%,98% 45%,82% 58%,90% 80%,66% 76%,55% 98%,44% 78%,20% 86%,24% 62%,4% 52%,22% 38%,14% 16%,38% 20%);
 }
+
+/* score number inputs: hide spin buttons so the digit sits dead-center */
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+input[type='number'] { -moz-appearance: textfield; appearance: textfield; padding: 0; text-align: center; }
