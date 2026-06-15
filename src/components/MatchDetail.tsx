@@ -3,7 +3,46 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { X, Lock } from 'lucide-react'
 import type { Match, Prediction, Lineup, SquadPlayer } from '../lib/types'
 import { matchState } from '../lib/matchState'
+import { supabase } from '../lib/supabase'
 import { Flag } from './Flag'
+
+type PeoplePick = { name: string; flag_code: string | null; home_pred: number; away_pred: number; points: number | null }
+
+// Everyone's predictions for a match — only readable once it's locked/finished
+// (enforced by RLS). Shown at the bottom of the detail for those states.
+function PeoplePredictions({ match }: { match: Match }) {
+  const [rows, setRows] = useState<PeoplePick[]>([])
+  useEffect(() => {
+    let active = true
+    supabase.from('predictions')
+      .select('home_pred,away_pred,points_awarded, players(name,flag_code)')
+      .eq('match_id', match.id)
+      .then(({ data }) => {
+        if (!active) return
+        const list: PeoplePick[] = (data ?? []).map((r: any) => ({
+          name: r.players?.name ?? '?', flag_code: r.players?.flag_code ?? null,
+          home_pred: r.home_pred, away_pred: r.away_pred, points: r.points_awarded,
+        }))
+        list.sort((a, b) => (b.points ?? -1) - (a.points ?? -1) || a.name.localeCompare(b.name))
+        setRows(list)
+      })
+    return () => { active = false }
+  }, [match.id, match.status, match.home_score])
+  if (rows.length === 0) return null
+  return (
+    <div className="mt-4 border-[3px] border-ink bg-paper text-ink p-2.5">
+      <div className="font-display text-[18px] uppercase tracking-wide leading-none mb-2">Everyone's picks</div>
+      {rows.map((r, i) => (
+        <div key={i} className="flex items-center gap-2 py-1.5 border-t-2 border-ink/10 first:border-t-0">
+          <Flag code={r.flag_code} label={r.name} size="sm" />
+          <div className="flex-1 font-display text-[15px] uppercase truncate">{r.name}</div>
+          <div className="font-display text-[16px] leading-none">{r.home_pred}–{r.away_pred}</div>
+          {r.points != null && <div className="font-sans font-900 text-[10px] uppercase tracking-wide bg-ink text-yellow px-1.5 py-0.5">+{r.points}</div>}
+        </div>
+      ))}
+    </div>
+  )
+}
 
 function shortLabel(label: string | null, fallback: string) {
   return (label ?? fallback).slice(0, 3).toUpperCase()
@@ -286,6 +325,7 @@ function DScore({ v, set }: { v: number; set?: (n: number) => void }) {
     <input
       type="number" min={0} value={v} disabled={!set}
       onChange={e => set?.(Math.max(0, +e.target.value))}
+      onFocus={e => e.target.select()}
       className={`w-[52px] h-[56px] text-center font-display text-[32px] border-[3px] border-ink bg-paper text-ink outline-none flex-none ${!set ? 'opacity-90' : ''}`}
     />
   )
@@ -433,6 +473,7 @@ export function MatchDetail({ match, prediction, onSave, onClose }: {
             <PredictionBlock match={match} />
             <FormSection match={match} />
             <LineupsSection match={match} />
+            {state !== 'open' && <PeoplePredictions match={match} />}
           </div>
         </motion.div>
       </motion.div>
