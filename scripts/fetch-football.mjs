@@ -57,7 +57,7 @@ if (unmapped.length) {
 
 // reload with team ids
 const { data: all } = await db.from('matches')
-  .select('id,home_label,away_label,kickoff_at,status,api_fixture_id,home_api_team,away_api_team,prediction,home_lineup,home_squad')
+  .select('id,home_label,away_label,kickoff_at,status,api_fixture_id,home_api_team,away_api_team,prediction,home_lineup,away_lineup,home_squad')
 const near = (all || []).filter(m => {
   if (!m.api_fixture_id || m.status === 'finished') return false
   const k = new Date(m.kickoff_at).getTime()
@@ -117,6 +117,10 @@ for (const m of near) {
       await db.from('matches').update({ prediction, home_form, away_form }).eq('id', m.id)
       pred++
     }
+    // The `tick` Edge Function fetches lineups in the pre-kickoff window but
+    // stores them lightweight (no club history). Here on the slow cron we either
+    // fetch a missing lineup fresh, or enrich an existing one with NOW/PREV club.
+    const needsClub = lu => lu && Array.isArray(lu.startXI) && lu.startXI.some(p => p.current_team === undefined)
     if (!m.home_lineup && k - now < 3 * HOUR) {
       const lu = await api(`fixtures/lineups?fixture=${m.api_fixture_id}`)
       if (lu.length) {
@@ -137,6 +141,23 @@ for (const m of near) {
         }).eq('id', m.id)
         lns++
       }
+    } else if (needsClub(m.home_lineup) || needsClub(m.away_lineup)) {
+      const enrich = async lu => {
+        if (!lu || !Array.isArray(lu.startXI)) return lu
+        const startXI = []
+        for (const x of lu.startXI) {
+          if (x.current_team !== undefined) { startXI.push(x); continue }
+          const c = await playerClubs(x.id)
+          startXI.push({ ...x, current_team: c.current, prev_team: c.prev })
+          await sleep(250)
+        }
+        return { ...lu, startXI }
+      }
+      await db.from('matches').update({
+        home_lineup: await enrich(m.home_lineup),
+        away_lineup: await enrich(m.away_lineup),
+      }).eq('id', m.id)
+      lns++
     }
     if (!m.home_squad && m.home_api_team && m.away_api_team) {
       const home_squad = await teamSquad(m.home_api_team)
