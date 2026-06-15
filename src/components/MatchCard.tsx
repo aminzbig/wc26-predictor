@@ -31,7 +31,7 @@ function StepBtn({ label, onTap }: { label: string; onTap: () => void }) {
 function Sbox({ v, set }: { v: number; set?: (n: number) => void }) {
   if (!set) {
     return (
-      <div className={`${BOX_W} h-[clamp(40px,6vh,58px)] grid place-items-center font-display text-[clamp(22px,4.4vh,32px)] border-[3px] border-ink bg-paper text-ink flex-none opacity-90`}>
+      <div className={`${BOX_W} h-[clamp(40px,6vh,58px)] flex items-center justify-center leading-none font-display text-[clamp(22px,4.4vh,32px)] border-[3px] border-ink bg-paper text-ink flex-none opacity-90`}>
         {v}
       </div>
     )
