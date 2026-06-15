@@ -6,6 +6,9 @@ import { MatchCard } from './MatchCard'
 
 const spring = { type: 'spring' as const, stiffness: 300, damping: 30 }
 
+// Active card is inset from the top so the upcoming cards can peek ABOVE it.
+const CARD_POS = 'absolute inset-x-0 bottom-0 top-[40px]'
+
 export function MatchDeck({ matches, index, setIndex, byMatch, onSave, onOpen }: {
   matches: Match[]
   index: number
@@ -27,27 +30,29 @@ export function MatchDeck({ matches, index, setIndex, byMatch, onSave, onOpen }:
 
   if (!active) return null
 
+  // Incoming card drops down from the stack above and scales up into place;
+  // the swiped card flies out sideways with a little rotation.
   const variants = {
-    enter: (d: number) => ({ x: d > 0 ? 340 : -340, opacity: 0 }),
-    center: { x: 0, opacity: 1 },
+    enter: { y: -18, scale: 0.94, opacity: 0.5 },
+    center: { y: 0, scale: 1, opacity: 1 },
     exit: (d: number) => ({ x: d > 0 ? -340 : 340, opacity: 0, rotate: d > 0 ? -8 : 8 }),
   }
 
   return (
     <div className="flex flex-col h-full select-none">
-      {/* Deck stack fills the available height */}
+      {/* Deck stack — upcoming cards peek above the active one */}
       <div className="relative flex-1 min-h-0">
-        {/* Furthest peek */}
+        {/* Furthest peek (above, smallest) */}
         {peek2 && (
-          <div aria-hidden className="absolute inset-0 pointer-events-none"
-            style={{ transform: 'translateY(22px) scale(0.90)', opacity: 0.4 }}>
+          <div aria-hidden className={`${CARD_POS} z-[1] pointer-events-none`}
+            style={{ transform: 'translateY(-28px) scale(0.90)', opacity: 0.4 }}>
             <MatchCard match={peek2} prediction={byMatch[peek2.id]} onSave={async () => {}} />
           </div>
         )}
-        {/* Nearer peek */}
+        {/* Nearer peek (above, a bit smaller) */}
         {peek1 && (
-          <div aria-hidden className="absolute inset-0 pointer-events-none"
-            style={{ transform: 'translateY(11px) scale(0.95)', opacity: 0.65 }}>
+          <div aria-hidden className={`${CARD_POS} z-[2] pointer-events-none`}
+            style={{ transform: 'translateY(-14px) scale(0.95)', opacity: 0.7 }}>
             <MatchCard match={peek1} prediction={byMatch[peek1.id]} onSave={async () => {}} />
           </div>
         )}
@@ -70,7 +75,7 @@ export function MatchDeck({ matches, index, setIndex, byMatch, onSave, onOpen }:
               if (offset.x < -110 || velocity.x < -500) goNext()
               else if (offset.x > 110 || velocity.x > 500) goPrev()
             }}
-            className="absolute inset-0 z-10 cursor-grab active:cursor-grabbing"
+            className={`${CARD_POS} z-10 cursor-grab active:cursor-grabbing`}
           >
             <MatchCard
               match={active}
