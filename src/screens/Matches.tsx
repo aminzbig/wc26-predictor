@@ -43,7 +43,7 @@ export function Matches() {
   const shown = useMemo(() => sorted.filter(m => {
     if (filter === 'all') return true
     const s = matchState(m)
-    if (filter === 'upcoming') return s !== 'finished'
+    if (filter === 'upcoming') return s === 'open'
     return s === 'finished'
   }), [sorted, filter])
 
@@ -63,7 +63,7 @@ export function Matches() {
     const next = sorted.filter(m => {
       if (f === 'all') return true
       const s = matchState(m)
-      if (f === 'upcoming') return s !== 'finished'
+      if (f === 'upcoming') return s === 'open'
       return s === 'finished'
     })
     setIndex(initialFocus(next))

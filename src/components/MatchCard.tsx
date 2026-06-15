@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { Lock } from 'lucide-react'
 import type { Match, Prediction } from '../lib/types'
@@ -89,6 +89,12 @@ export function MatchCard({ match, prediction, onSave, onOpen }:
   const [ap, setAp] = useState(prediction?.away_pred ?? 0)
   const [saving, setSaving] = useState(false)
   const editable = state === 'open'
+
+  // keep the score in sync when the saved prediction changes (e.g. saved from the detail view)
+  useEffect(() => {
+    setHp(prediction?.home_pred ?? 0)
+    setAp(prediction?.away_pred ?? 0)
+  }, [prediction?.home_pred, prediction?.away_pred])
 
   const colorClass = panelColor(match.match_no ?? 0)
 

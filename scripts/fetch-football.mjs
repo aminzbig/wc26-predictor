@@ -61,8 +61,8 @@ const { data: all } = await db.from('matches')
 const near = (all || []).filter(m => {
   if (!m.api_fixture_id || m.status === 'finished') return false
   const k = new Date(m.kickoff_at).getTime()
-  return k - now < 48 * HOUR && k - now > -3 * HOUR // upcoming within 48h (and not long past)
-}).sort((a, b) => new Date(a.kickoff_at) - new Date(b.kickoff_at)).slice(0, 25)
+  return k - now > -3 * HOUR // any upcoming (or recently kicked-off) match — fetch form/prediction ahead of the lineup window
+}).sort((a, b) => new Date(a.kickoff_at) - new Date(b.kickoff_at)).slice(0, 30)
 
 const teamForm = async teamId => {
   const fx = await api(`fixtures?team=${teamId}&last=5`)

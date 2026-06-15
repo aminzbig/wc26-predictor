@@ -318,6 +318,12 @@ export function MatchDetail({ match, prediction, onSave, onClose }: {
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
 
+  // keep the score in sync when the saved prediction changes (e.g. saved from the card)
+  useEffect(() => {
+    setHp(prediction?.home_pred ?? 0)
+    setAp(prediction?.away_pred ?? 0)
+  }, [prediction?.home_pred, prediction?.away_pred])
+
   const mult = match.multiplier ?? 1
   const stageText = match.group_label
     ? match.group_label
