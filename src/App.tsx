@@ -4,6 +4,7 @@ import { Protected } from './components/Protected'
 import { BottomNav } from './components/BottomNav'
 import { Login } from './screens/Login'
 import { Matches } from './screens/Matches'
+import { Social } from './screens/Social'
 import { Ranking } from './screens/Ranking'
 import { Me } from './screens/Me'
 import { AdminResults } from './screens/admin/AdminResults'
@@ -26,6 +27,7 @@ export default function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/matches" element={<Protected><Shell><Matches /></Shell></Protected>} />
+        <Route path="/social" element={<Protected><Shell><Social /></Shell></Protected>} />
         <Route path="/ranking" element={<Protected><Shell><Ranking /></Shell></Protected>} />
         <Route path="/me" element={<Protected><Shell><Me /></Shell></Protected>} />
         <Route path="/admin" element={<Protected admin><Shell><AdminResults /></Shell></Protected>} />
