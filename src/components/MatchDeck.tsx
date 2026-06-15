@@ -6,8 +6,9 @@ import { MatchCard } from './MatchCard'
 
 const spring = { type: 'spring' as const, stiffness: 300, damping: 30 }
 
-// Active card is inset from the top so the upcoming cards can peek ABOVE it.
-const CARD_POS = 'absolute inset-x-0 bottom-0 top-[40px]'
+// Active card is inset from the top so the upcoming cards can peek ABOVE it,
+// stacking up toward the top bar.
+const CARD_POS = 'absolute inset-x-0 bottom-0 top-[62px]'
 
 export function MatchDeck({ matches, index, setIndex, byMatch, onSave, onOpen }: {
   matches: Match[]
@@ -45,14 +46,14 @@ export function MatchDeck({ matches, index, setIndex, byMatch, onSave, onOpen }:
         {/* Furthest peek (above, smallest) */}
         {peek2 && (
           <div aria-hidden className={`${CARD_POS} z-[1] pointer-events-none`}
-            style={{ transform: 'translateY(-28px) scale(0.90)', opacity: 0.4 }}>
+            style={{ transform: 'translateY(-56px) scale(0.90)', transformOrigin: 'top center', opacity: 0.4 }}>
             <MatchCard match={peek2} prediction={byMatch[peek2.id]} onSave={async () => {}} />
           </div>
         )}
         {/* Nearer peek (above, a bit smaller) */}
         {peek1 && (
           <div aria-hidden className={`${CARD_POS} z-[2] pointer-events-none`}
-            style={{ transform: 'translateY(-14px) scale(0.95)', opacity: 0.7 }}>
+            style={{ transform: 'translateY(-29px) scale(0.95)', transformOrigin: 'top center', opacity: 0.7 }}>
             <MatchCard match={peek1} prediction={byMatch[peek1.id]} onSave={async () => {}} />
           </div>
         )}
