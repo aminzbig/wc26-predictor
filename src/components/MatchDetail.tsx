@@ -64,20 +64,6 @@ const FORM_BADGE: Record<'W' | 'D' | 'L', string> = {
 
 type FormItem = { result: 'W' | 'D' | 'L'; score: string; opp: string; date?: string; comp?: string }
 
-function formDetailLine(f: FormItem): string {
-  const parts: string[] = [`vs ${f.opp}`]
-  if (f.score) parts.push(f.score.replace('-', '–'))
-  parts.push(f.result)
-  if (f.date) {
-    const d = new Date(f.date)
-    if (!Number.isNaN(d.getTime())) {
-      parts.push(d.toLocaleString(undefined, { month: 'short', day: 'numeric' }))
-    }
-  }
-  if (f.comp) parts.push(f.comp)
-  return parts.join(' · ').toUpperCase()
-}
-
 function FormTeamRow({ label, fallback, form }: {
   label: string | null; fallback: string; form: FormItem[]
 }) {
@@ -103,8 +89,22 @@ function FormTeamRow({ label, fallback, form }: {
         </div>
       </div>
       {open != null && shown[open] && (
-        <div className="mt-1 text-[10px] font-sans font-700 uppercase tracking-wider opacity-80">
-          {formDetailLine(shown[open])}
+        <div className="mt-1.5 bg-paper border-[3px] border-ink p-2 flex items-center gap-2 text-ink">
+          <div className={`w-[34px] h-[34px] grid place-items-center font-display text-[16px] leading-none border-2 border-ink flex-none ${FORM_BADGE[shown[open].result]}`}>
+            {shown[open].result}
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="font-display text-[14px] uppercase leading-none truncate">
+              vs {shown[open].opp} · {shown[open].score.replace('-', '–')}
+            </div>
+            <div className="text-[10px] font-sans font-700 uppercase tracking-wider opacity-80 truncate">
+              {[shown[open].date ? new Date(shown[open].date!).toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : null, shown[open].comp].filter(Boolean).join(' · ')}
+            </div>
+          </div>
+          <button type="button" onClick={() => setOpen(null)} aria-label="Close"
+            className="w-[24px] h-[24px] grid place-items-center bg-ink text-paper flex-none">
+            <X size={14} />
+          </button>
         </div>
       )}
     </div>
@@ -133,7 +133,7 @@ function expandPos(pos: string | null): string {
 
 type PlayerInfo = {
   key: string; id: number | null; name: string; number: number | null; position: string
-  photo: string | null; age: number | null
+  photo: string | null; age: number | null; current: string | null; prev: string | null
 }
 
 function FormationPitch({ label, fallback, lineup, squad }: {
@@ -171,6 +171,8 @@ function FormationPitch({ label, fallback, lineup, squad }: {
         position: sq?.position ?? expandPos(pl.pos),
         photo: sq?.photo ?? null,
         age: sq?.age ?? null,
+        current: pl.current_team ?? null,
+        prev: pl.prev_team ?? null,
       }
       dots.push({
         top: topPct, left: leftPct, number: pl.number,
@@ -208,6 +210,11 @@ function FormationPitch({ label, fallback, lineup, squad }: {
               <div className="text-[10px] font-sans font-700 uppercase tracking-wider opacity-80">
                 {open.position}{open.age != null ? ` · AGE ${open.age}` : ''}
               </div>
+              {(open.current || open.prev) && (
+                <div className="text-[9px] font-sans font-700 uppercase tracking-wider opacity-70 truncate">
+                  {open.current ? `NOW: ${open.current}` : ''}{open.current && open.prev ? ' · ' : ''}{open.prev ? `PREV: ${open.prev}` : ''}
+                </div>
+              )}
             </div>
             <button
               type="button"

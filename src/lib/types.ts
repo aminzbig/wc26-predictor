@@ -21,7 +21,7 @@ export interface Match {
   away_squad?: SquadPlayer[] | null
 }
 export interface SquadPlayer { id: number; name: string; age: number | null; number: number | null; position: string; photo: string }
-export interface LineupPlayer { id?: number; name: string; number: number | null; pos: string | null; grid: string | null }
+export interface LineupPlayer { id?: number; name: string; number: number | null; pos: string | null; grid: string | null; current_team?: string | null; prev_team?: string | null }
 export interface Lineup { formation: string | null; coach: string | null; startXI: LineupPlayer[] }
 export interface Prediction {
   id: string; player_id: string; match_id: string

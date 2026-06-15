@@ -31,6 +31,7 @@ const pair = (h, a) => `${canon(h)}|${canon(a)}`
 
 const HOUR = 3600e3
 const now = Date.now()
+const sleep = ms => new Promise(r => setTimeout(r, ms))
 
 // 1. map unmapped matches to API-Football fixtures
 const { data: ours } = await db.from('matches')
@@ -74,6 +75,20 @@ const teamForm = async teamId => {
   })
 }
 
+// player club history (current + previous team), memoized per run
+const clubCache = new Map()
+const playerClubs = async id => {
+  if (!id) return { current: null, prev: null }
+  if (clubCache.has(id)) return clubCache.get(id)
+  let res = { current: null, prev: null }
+  try {
+    const tr = (await api(`transfers?player=${id}`))[0]?.transfers || []
+    if (tr[0]) res = { current: tr[0].teams?.in?.name ?? null, prev: tr[0].teams?.out?.name ?? null }
+  } catch { /* ignore */ }
+  clubCache.set(id, res)
+  return res
+}
+
 // squad fetch, memoized per team for the run
 const squadCache = new Map()
 const teamSquad = async teamId => {
@@ -105,15 +120,20 @@ for (const m of near) {
     if (!m.home_lineup && k - now < 3 * HOUR) {
       const lu = await api(`fixtures/lineups?fixture=${m.api_fixture_id}`)
       if (lu.length) {
-        const pack = e => ({
-          formation: e.formation, coach: e.coach?.name ?? null,
-          startXI: (e.startXI || []).map(x => ({ id: x.player.id, name: x.player.name, number: x.player.number, pos: x.player.pos, grid: x.player.grid })),
-        })
+        const packTeam = async e => {
+          const startXI = []
+          for (const x of (e.startXI || [])) {
+            const c = await playerClubs(x.player.id) // throttled below to respect per-minute limit
+            startXI.push({ id: x.player.id, name: x.player.name, number: x.player.number, pos: x.player.pos, grid: x.player.grid, current_team: c.current, prev_team: c.prev })
+            await sleep(250)
+          }
+          return { formation: e.formation, coach: e.coach?.name ?? null, startXI }
+        }
         const home = lu.find(e => e.team.id === m.home_api_team)
         const away = lu.find(e => e.team.id === m.away_api_team)
         await db.from('matches').update({
-          home_lineup: home ? pack(home) : null,
-          away_lineup: away ? pack(away) : null,
+          home_lineup: home ? await packTeam(home) : null,
+          away_lineup: away ? await packTeam(away) : null,
         }).eq('id', m.id)
         lns++
       }
