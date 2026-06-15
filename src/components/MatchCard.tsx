@@ -14,25 +14,25 @@ function panelColor(match_no: number) {
 // Module-level components: defining these inside MatchCard would give them a new
 // identity each render, remounting the score <input> and dropping focus after
 // one keystroke.
-function Sbox({ v, set, real: _real }: { v: number; set?: (n: number) => void; real?: boolean }) {
+function Sbox({ v, set }: { v: number; set?: (n: number) => void; real?: boolean }) {
   return (
     <input
       type="number" min={0} value={v} disabled={!set}
       onChange={e => set?.(Math.max(0, +e.target.value))}
       onClick={e => e.stopPropagation()}
       onPointerDown={e => e.stopPropagation()}
-      className={`w-[36px] h-[38px] text-center font-display text-[22px] border-[3px] border-ink bg-paper text-ink outline-none flex-none ${!set ? 'opacity-90' : ''}`}
+      className={`w-[52px] h-[58px] text-center font-display text-[32px] border-[3px] border-ink bg-paper text-ink outline-none flex-none ${!set ? 'opacity-90' : ''}`}
     />
   )
 }
 
 function Team({ code, label, sub }: { code: string | null; label: string | null; sub?: string }) {
   return (
-    <div className="flex items-center gap-2 flex-1 min-w-0">
-      <Flag code={code} label={label} />
-      <div className="font-display text-[22px] uppercase leading-none tracking-wide truncate">
-        {label}
-        {sub && <small className="block font-sans font-700 text-[10px] uppercase tracking-wider opacity-70">{sub}</small>}
+    <div className="flex items-center gap-3 flex-1 min-w-0">
+      <Flag code={code} label={label} size="lg" />
+      <div className="font-display text-[27px] uppercase leading-[0.92] tracking-wide min-w-0">
+        <span className="block truncate">{label}</span>
+        {sub && <small className="block font-sans font-700 text-[11px] uppercase tracking-wider opacity-70">{sub}</small>}
       </div>
     </div>
   )
@@ -46,7 +46,7 @@ function OddsBar({ m }: { m: Match }) {
   const h = (m.home_label ?? 'Home').slice(0, 3).toUpperCase()
   const a = (m.away_label ?? 'Away').slice(0, 3).toUpperCase()
   return (
-    <div className="mt-2.5 border-[2px] border-ink bg-paper text-ink p-1.5">
+    <div className="mt-3 border-[2px] border-ink bg-paper text-ink p-1.5">
       <div className="flex justify-between text-[9px] font-sans font-900 uppercase tracking-wider mb-1">
         <span>{h} {ph}%</span><span>Draw {pd}%</span><span>{a} {pa}%</span>
       </div>
@@ -72,12 +72,12 @@ export function MatchCard({ match, prediction, onSave, onOpen }:
   return (
     <motion.div
       onClick={onOpen}
-      whileTap={onOpen ? { scale: 0.985 } : undefined}
-      className={`${colorClass} border-[3px] border-ink p-3 mb-3.5 relative ${onOpen ? 'cursor-pointer' : ''}`}>
+      whileTap={onOpen ? { scale: 0.99 } : undefined}
+      className={`${colorClass} border-[3px] border-ink p-4 relative h-full flex flex-col overflow-hidden ${onOpen ? 'cursor-pointer' : ''}`}>
       {/* Starburst points badge for finished matches */}
       {state === 'finished' && prediction?.points_awarded != null && (
         <div
-          className="star-badge absolute -top-3 -right-2.5 w-[54px] h-[54px] bg-ink text-yellow flex items-center justify-center font-display text-[15px]"
+          className="star-badge absolute -top-3 -right-2.5 w-[60px] h-[60px] bg-ink text-yellow flex items-center justify-center font-display text-[16px]"
           style={{ transform: 'rotate(8deg)' }}
         >
           +{prediction.points_awarded}
@@ -85,43 +85,50 @@ export function MatchCard({ match, prediction, onSave, onOpen }:
       )}
 
       {/* Header row: time/group + status */}
-      <div className="flex justify-between items-center text-[10px] font-sans font-900 uppercase tracking-widest mb-2.5">
-        <span>{match.group_label ?? match.stage.toUpperCase()} · {new Date(match.kickoff_at).toLocaleString()}</span>
-        {state === 'open' && <span>★ OPEN</span>}
-        {state === 'locked' && <span className="flex items-center gap-1"><Lock size={10} />LOCKED</span>}
-        {state === 'finished' && <span>FT</span>}
+      <div className="flex justify-between items-center text-[11px] font-sans font-900 uppercase tracking-widest shrink-0">
+        <span className="truncate pr-2">{match.group_label ?? match.stage.toUpperCase()} · {new Date(match.kickoff_at).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+        {state === 'open' && <span className="shrink-0">★ OPEN</span>}
+        {state === 'locked' && <span className="flex items-center gap-1 shrink-0"><Lock size={11} />LOCKED</span>}
+        {state === 'finished' && <span className="shrink-0">FT</span>}
       </div>
 
-      {/* Teams + scores */}
-      <div className="flex items-center gap-2 mb-2">
-        <Team code={match.home_code} label={match.home_label}
-          sub={state !== 'open' && prediction ? `you: ${prediction.home_pred}` : undefined} />
-        <Sbox v={state === 'finished' ? match.home_score! : hp} set={editable ? setHp : undefined} real={state === 'finished'} />
-      </div>
-      <div className="flex items-center gap-2">
-        <Team code={match.away_code} label={match.away_label}
-          sub={state !== 'open' && prediction ? `you: ${prediction.away_pred}` : undefined} />
-        <Sbox v={state === 'finished' ? match.away_score! : ap} set={editable ? setAp : undefined} real={state === 'finished'} />
-      </div>
-
-      <OddsBar m={match} />
-
-      {/* Lock button */}
-      {state === 'open' && (
-        <button
-          disabled={saving}
-          onPointerDown={e => e.stopPropagation()}
-          onClick={async e => { e.stopPropagation(); setSaving(true); try { await onSave(hp, ap) } finally { setSaving(false) } }}
-          className="w-full mt-3 bg-ink text-paper font-display text-[14px] uppercase tracking-widest py-2.5 text-center disabled:opacity-50"
-        >
-          {prediction ? 'Update prediction' : 'Lock prediction'}
-        </button>
-      )}
-      {state === 'locked' && (
-        <div className="flex items-center gap-1.5 text-[11px] font-sans font-700 uppercase tracking-wider mt-3 opacity-70">
-          <Lock size={11} /> Prediction locked
+      {/* Teams + scores — fill and center like a Tinder card */}
+      <div className="flex-1 flex flex-col justify-center gap-6 py-4">
+        <div className="flex items-center gap-3">
+          <Team code={match.home_code} label={match.home_label}
+            sub={state !== 'open' && prediction ? `you: ${prediction.home_pred}` : undefined} />
+          <Sbox v={state === 'finished' ? match.home_score! : hp} set={editable ? setHp : undefined} />
         </div>
-      )}
+        <div className="font-display text-[13px] uppercase tracking-[0.3em] opacity-40 text-center">vs</div>
+        <div className="flex items-center gap-3">
+          <Team code={match.away_code} label={match.away_label}
+            sub={state !== 'open' && prediction ? `you: ${prediction.away_pred}` : undefined} />
+          <Sbox v={state === 'finished' ? match.away_score! : ap} set={editable ? setAp : undefined} />
+        </div>
+      </div>
+
+      {/* Footer: odds + action, pinned to bottom */}
+      <div className="shrink-0">
+        <OddsBar m={match} />
+        {state === 'open' && (
+          <button
+            disabled={saving}
+            onPointerDown={e => e.stopPropagation()}
+            onClick={async e => { e.stopPropagation(); setSaving(true); try { await onSave(hp, ap) } finally { setSaving(false) } }}
+            className="w-full mt-3 bg-ink text-paper font-display text-[16px] uppercase tracking-widest py-3 text-center disabled:opacity-50"
+          >
+            {prediction ? 'Update prediction' : 'Lock prediction'}
+          </button>
+        )}
+        {state === 'locked' && (
+          <div className="flex items-center gap-1.5 text-[11px] font-sans font-700 uppercase tracking-wider mt-3 opacity-70">
+            <Lock size={11} /> Prediction locked · tap for details
+          </div>
+        )}
+        {state === 'finished' && (
+          <div className="text-[11px] font-sans font-700 uppercase tracking-wider mt-3 opacity-70 text-center">Tap for details</div>
+        )}
+      </div>
     </motion.div>
   )
 }

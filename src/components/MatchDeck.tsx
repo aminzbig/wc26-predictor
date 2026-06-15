@@ -22,33 +22,33 @@ export function MatchDeck({ matches, index, setIndex, byMatch, onSave, onOpen }:
   const goPrev = () => { if (index > 0) { setDir(-1); setIndex(clamp(index - 1)) } }
 
   const active = matches[index]
-  const peek = matches[index + 1]
+  const peek1 = matches[index + 1]
+  const peek2 = matches[index + 2]
 
   if (!active) return null
 
   const variants = {
-    enter: (d: number) => ({ x: d > 0 ? 320 : -320, opacity: 0, scale: 0.95 }),
-    center: { x: 0, opacity: 1, scale: 1 },
-    exit: (d: number) => ({ x: d > 0 ? -320 : 320, opacity: 0, scale: 0.95 }),
+    enter: (d: number) => ({ x: d > 0 ? 340 : -340, opacity: 0 }),
+    center: { x: 0, opacity: 1 },
+    exit: (d: number) => ({ x: d > 0 ? -340 : 340, opacity: 0, rotate: d > 0 ? -8 : 8 }),
   }
 
   return (
-    <div className="select-none">
-      {/* Deck stack */}
-      <div className="relative">
-        {/* Peek of the next card behind the active one */}
-        {peek && (
-          <div
-            aria-hidden
-            className="absolute inset-x-0 top-0 pointer-events-none"
-            style={{ transform: 'translateY(14px) scale(0.93)', opacity: 0.55 }}
-          >
-            <MatchCard
-              key={`peek-${peek.id}`}
-              match={peek}
-              prediction={byMatch[peek.id]}
-              onSave={async () => {}}
-            />
+    <div className="flex flex-col h-full select-none">
+      {/* Deck stack fills the available height */}
+      <div className="relative flex-1 min-h-0">
+        {/* Furthest peek */}
+        {peek2 && (
+          <div aria-hidden className="absolute inset-0 pointer-events-none"
+            style={{ transform: 'translateY(22px) scale(0.90)', opacity: 0.4 }}>
+            <MatchCard match={peek2} prediction={byMatch[peek2.id]} onSave={async () => {}} />
+          </div>
+        )}
+        {/* Nearer peek */}
+        {peek1 && (
+          <div aria-hidden className="absolute inset-0 pointer-events-none"
+            style={{ transform: 'translateY(11px) scale(0.95)', opacity: 0.65 }}>
+            <MatchCard match={peek1} prediction={byMatch[peek1.id]} onSave={async () => {}} />
           </div>
         )}
 
@@ -70,7 +70,7 @@ export function MatchDeck({ matches, index, setIndex, byMatch, onSave, onOpen }:
               if (offset.x < -110 || velocity.x < -500) goNext()
               else if (offset.x > 110 || velocity.x > 500) goPrev()
             }}
-            className="relative z-10 cursor-grab active:cursor-grabbing"
+            className="absolute inset-0 z-10 cursor-grab active:cursor-grabbing"
           >
             <MatchCard
               match={active}
@@ -83,27 +83,27 @@ export function MatchDeck({ matches, index, setIndex, byMatch, onSave, onOpen }:
       </div>
 
       {/* Position row */}
-      <div className="flex items-center justify-between mt-4">
+      <div className="flex items-center justify-between mt-3 shrink-0">
         <motion.button
           whileTap={{ scale: 0.9 }}
           onClick={goPrev}
           disabled={index === 0}
-          className="w-[44px] h-[44px] grid place-items-center border-[3px] border-ink bg-paper text-ink disabled:opacity-40"
+          className="w-[42px] h-[42px] grid place-items-center border-[3px] border-ink bg-paper text-ink disabled:opacity-40"
           aria-label="Previous match"
         >
-          <ChevronLeft size={22} />
+          <ChevronLeft size={20} />
         </motion.button>
-        <span className="font-display text-[15px] uppercase tracking-wide text-ink">
+        <span className="font-display text-[14px] uppercase tracking-wide text-ink">
           Match {index + 1} / {matches.length}
         </span>
         <motion.button
           whileTap={{ scale: 0.9 }}
           onClick={goNext}
           disabled={index === matches.length - 1}
-          className="w-[44px] h-[44px] grid place-items-center border-[3px] border-ink bg-paper text-ink disabled:opacity-40"
+          className="w-[42px] h-[42px] grid place-items-center border-[3px] border-ink bg-paper text-ink disabled:opacity-40"
           aria-label="Next match"
         >
-          <ChevronRight size={22} />
+          <ChevronRight size={20} />
         </motion.button>
       </div>
     </div>

@@ -69,33 +69,37 @@ export function Matches() {
 
   return (
     <>
-      {/* Poster header */}
-      <div className="bg-ink text-paper px-3 py-2 mb-3 flex justify-between items-center">
-        <h1 className="font-display text-[20px] uppercase tracking-wide">Matches</h1>
-        <span className="font-sans font-900 text-[10px] uppercase tracking-widest text-yellow">Swipe or tap</span>
-      </div>
+      <div className="flex flex-col h-[calc(100dvh-120px)]">
+        {/* Poster header */}
+        <div className="bg-ink text-paper px-3 py-2 mb-3 flex justify-between items-center shrink-0">
+          <h1 className="font-display text-[20px] uppercase tracking-wide">Matches</h1>
+          <span className="font-sans font-900 text-[10px] uppercase tracking-widest text-yellow">Swipe or tap</span>
+        </div>
 
-      {/* Filter chips */}
-      <div className="flex gap-0 mb-5 border-[3px] border-ink">
-        {(['all', 'upcoming', 'finished'] as Filter[]).map(f =>
-          <button key={f} onClick={() => onFilter(f)}
-            className={`flex-1 font-display text-[13px] uppercase tracking-wide py-2 border-r-[3px] border-ink last:border-r-0 ${filter === f ? 'bg-ink text-paper' : 'bg-paper text-ink'}`}>
-            {f}
-          </button>)}
-      </div>
+        {/* Filter chips */}
+        <div className="flex gap-0 mb-4 border-[3px] border-ink shrink-0">
+          {(['all', 'upcoming', 'finished'] as Filter[]).map(f =>
+            <button key={f} onClick={() => onFilter(f)}
+              className={`flex-1 font-display text-[13px] uppercase tracking-wide py-2 border-r-[3px] border-ink last:border-r-0 ${filter === f ? 'bg-ink text-paper' : 'bg-paper text-ink'}`}>
+              {f}
+            </button>)}
+        </div>
 
-      {shown.length === 0
-        ? <p className="font-sans font-700 text-ink/60 uppercase text-sm tracking-wide">No matches here.</p>
-        : (
-          <MatchDeck
-            matches={shown}
-            index={safeIndex}
-            setIndex={setIndex}
-            byMatch={byMatch}
-            onSave={save}
-            onOpen={setSelected}
-          />
-        )}
+        <div className="flex-1 min-h-0">
+          {shown.length === 0
+            ? <p className="font-sans font-700 text-ink/60 uppercase text-sm tracking-wide">No matches here.</p>
+            : (
+              <MatchDeck
+                matches={shown}
+                index={safeIndex}
+                setIndex={setIndex}
+                byMatch={byMatch}
+                onSave={save}
+                onOpen={setSelected}
+              />
+            )}
+        </div>
+      </div>
 
       {selectedLive && (
         <MatchDetail
