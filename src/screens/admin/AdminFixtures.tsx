@@ -21,24 +21,32 @@ export function AdminFixtures() {
     setF({ ...f, home_label: '', away_label: '', home_code: '', away_code: '', kickoff_at: '' })
     reload()
   }
+
   const inp = (ph: string, key: keyof typeof f) =>
     <input placeholder={ph} value={f[key] as string} onChange={e => setF({ ...f, [key]: e.target.value })}
-      className="px-3 py-2 rounded-lg bg-surface shadow-neu-inset text-sm outline-none" />
+      className="px-3 py-2.5 border-[3px] border-ink bg-paper font-display text-[13px] uppercase text-ink outline-none placeholder:text-ink/40" />
+
   return (
     <>
-      <h1 className="text-xl font-bold tracking-tight mb-1">Admin</h1>
+      <div className="bg-ink text-paper px-3 py-2 mb-1">
+        <h1 className="font-display text-[20px] uppercase tracking-wide">Admin</h1>
+      </div>
       <AdminTabs />
-      <div className="bg-surface rounded-neu shadow-neu p-4 mb-4 grid grid-cols-2 gap-2">
+      <div className="border-[3px] border-ink bg-paper p-4 mb-4 grid grid-cols-2 gap-2">
         <select value={f.stage} onChange={e => setF({ ...f, stage: e.target.value as Stage })}
-          className="px-3 py-2 rounded-lg bg-surface shadow-neu-inset text-sm col-span-2">
-          {STAGES.map(s => <option key={s} value={s}>{s}</option>)}</select>
+          className="px-3 py-2.5 border-[3px] border-ink bg-paper font-display text-[13px] uppercase text-ink outline-none col-span-2">
+          {STAGES.map(s => <option key={s} value={s}>{s}</option>)}
+        </select>
         {inp('Home label (e.g. Winner C)', 'home_label')}{inp('Away label', 'away_label')}
         {inp('Home flag code (br)', 'home_code')}{inp('Away flag code (hr)', 'away_code')}
         <input type="datetime-local" value={f.kickoff_at} onChange={e => setF({ ...f, kickoff_at: e.target.value })}
-          className="px-3 py-2 rounded-lg bg-surface shadow-neu-inset text-sm col-span-2" />
-        <button onClick={add} className="col-span-2 py-2.5 rounded-xl bg-gradient-to-b from-accent2 to-accent text-[#06101f] font-bold text-sm">Add fixture</button>
+          className="px-3 py-2.5 border-[3px] border-ink bg-paper font-display text-[13px] text-ink outline-none col-span-2" />
+        <button onClick={add}
+          className="col-span-2 py-2.5 bg-ink text-paper font-display text-[15px] uppercase tracking-wide">
+          Add fixture
+        </button>
       </div>
-      <p className="text-muted text-xs mb-2">{matches.length} fixtures loaded.</p>
+      <p className="font-sans font-700 text-[11px] uppercase tracking-widest text-ink/60 mb-2">{matches.length} fixtures loaded.</p>
     </>
   )
 }

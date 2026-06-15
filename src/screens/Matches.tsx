@@ -18,17 +18,24 @@ export function Matches() {
     return s === 'finished'
   }), [matches, filter])
 
-  if (loading) return <p className="text-muted">Loading matches…</p>
+  if (loading) return <p className="font-sans font-700 text-ink/60 uppercase text-sm tracking-wide">Loading matches…</p>
   return (
     <>
-      <h1 className="text-xl font-bold tracking-tight mb-1">Matches</h1>
-      <div className="flex gap-2 mb-4">
+      {/* Poster header */}
+      <div className="bg-ink text-paper px-3 py-2 mb-3 flex justify-between items-center">
+        <h1 className="font-display text-[20px] uppercase tracking-wide">Matches</h1>
+      </div>
+
+      {/* Filter buttons */}
+      <div className="flex gap-0 mb-4 border-[3px] border-ink">
         {(['upcoming', 'locked', 'finished'] as Filter[]).map(f =>
           <button key={f} onClick={() => setFilter(f)}
-            className={`text-xs font-semibold px-3 py-2 rounded-xl bg-surface ${filter === f ? 'shadow-neu-inset text-accent' : 'shadow-neu-sm text-muted'}`}>
-            {f[0].toUpperCase() + f.slice(1)}</button>)}
+            className={`flex-1 font-display text-[13px] uppercase tracking-wide py-2 border-r-[3px] border-ink last:border-r-0 ${filter === f ? 'bg-ink text-paper' : 'bg-paper text-ink'}`}>
+            {f === 'upcoming' ? 'Open' : f}
+          </button>)}
       </div>
-      {shown.length === 0 && <p className="text-muted text-sm">No matches here.</p>}
+
+      {shown.length === 0 && <p className="font-sans font-700 text-ink/60 uppercase text-sm tracking-wide">No matches here.</p>}
       {shown.map(m =>
         <MatchCard key={m.id} match={m} prediction={byMatch[m.id]}
           onSave={(h, a) => save(m.id, h, a)} />)}

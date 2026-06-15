@@ -1,8 +1,17 @@
-@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@600;700;800;900&display=swap');
 @import 'flag-icons/css/flag-icons.min.css';
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 html, body, #root { height: 100%; }
-body { @apply bg-bg text-txt font-sans antialiased; }
+body {
+  @apply bg-paper text-ink font-sans antialiased;
+  background-image: radial-gradient(rgba(20,18,16,.12) 1px, transparent 1px);
+  background-size: 4px 4px;
+}
+
+/* starburst badge */
+.star-badge {
+  clip-path: polygon(50% 0%,61% 18%,82% 12%,79% 34%,98% 45%,82% 58%,90% 80%,66% 76%,55% 98%,44% 78%,20% 86%,24% 62%,4% 52%,22% 38%,14% 16%,38% 20%);
+}

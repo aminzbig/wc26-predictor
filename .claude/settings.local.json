@@ -33,7 +33,8 @@
       "Bash(tail *)",
       "Bash(psql *)",
       "Bash(/Users/amin/.claude/plugins/cache/claude-plugins-official/superpowers/5.1.0/skills/brainstorming/scripts/start-server.sh *)",
-      "Bash(/Users/amin/.claude/plugins/cache/claude-plugins-official/superpowers/5.1.0/skills/brainstorming/scripts/stop-server.sh *)"
+      "Bash(/Users/amin/.claude/plugins/cache/claude-plugins-official/superpowers/5.1.0/skills/brainstorming/scripts/stop-server.sh *)",
+      "Bash(sips -s format jpeg \"/Users/amin/Downloads/IMG_3682.HEIC\" --out /tmp/design_ref.jpg)"
     ]
   }
 }

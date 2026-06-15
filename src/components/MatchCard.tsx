@@ -1,26 +1,36 @@
 import { useState } from 'react'
-import { Check, Clock, Lock } from 'lucide-react'
+import { Lock } from 'lucide-react'
 import type { Match, Prediction } from '../lib/types'
 import { matchState } from '../lib/matchState'
 import { Flag } from './Flag'
 
+// Panel color cycles deterministically by match_no so each card looks bold.
+const PANEL_COLORS = ['bg-orange', 'bg-green', 'bg-blue text-paper', 'bg-yellow', 'bg-red text-paper']
+function panelColor(match_no: number) {
+  return PANEL_COLORS[match_no % PANEL_COLORS.length]
+}
+
 // Module-level components: defining these inside MatchCard would give them a new
 // identity each render, remounting the score <input> and dropping focus after
 // one keystroke.
-function Sbox({ v, set, real }: { v: number; set?: (n: number) => void; real?: boolean }) {
+function Sbox({ v, set, real: _real }: { v: number; set?: (n: number) => void; real?: boolean }) {
   return (
-    <input type="number" min={0} value={v} disabled={!set}
+    <input
+      type="number" min={0} value={v} disabled={!set}
       onChange={e => set?.(Math.max(0, +e.target.value))}
-      className={`w-[38px] h-[42px] text-center font-bold text-lg rounded-xl bg-surface shadow-neu-inset ${real ? 'text-bright' : 'text-accent'} ${!set ? 'opacity-90' : ''}`} />
+      className={`w-[36px] h-[38px] text-center font-display text-[22px] border-[3px] border-ink bg-paper text-ink outline-none flex-none ${!set ? 'opacity-90' : ''}`}
+    />
   )
 }
 
 function Team({ code, label, sub }: { code: string | null; label: string | null; sub?: string }) {
   return (
-    <div className="flex items-center gap-3 flex-1">
+    <div className="flex items-center gap-2 flex-1 min-w-0">
       <Flag code={code} label={label} />
-      <div className="font-semibold text-[15px] text-txt">{label}
-        {sub && <small className="block text-[10.5px] text-muted">{sub}</small>}</div>
+      <div className="font-display text-[22px] uppercase leading-none tracking-wide truncate">
+        {label}
+        {sub && <small className="block font-sans font-700 text-[10px] uppercase tracking-wider opacity-70">{sub}</small>}
+      </div>
     </div>
   )
 }
@@ -33,35 +43,55 @@ export function MatchCard({ match, prediction, onSave }:
   const [saving, setSaving] = useState(false)
   const editable = state === 'open'
 
+  const colorClass = panelColor(match.match_no ?? 0)
+
   return (
-    <div className="bg-surface rounded-neu shadow-neu p-4 mb-3.5">
-      <div className="flex justify-between items-center text-[10.5px] uppercase tracking-wide text-muted font-semibold mb-3">
+    <div className={`${colorClass} border-[3px] border-ink p-3 mb-3.5 relative`}>
+      {/* Starburst points badge for finished matches */}
+      {state === 'finished' && prediction?.points_awarded != null && (
+        <div
+          className="star-badge absolute -top-3 -right-2.5 w-[54px] h-[54px] bg-ink text-yellow flex items-center justify-center font-display text-[15px]"
+          style={{ transform: 'rotate(8deg)' }}
+        >
+          +{prediction.points_awarded}
+        </div>
+      )}
+
+      {/* Header row: time/group + status */}
+      <div className="flex justify-between items-center text-[10px] font-sans font-900 uppercase tracking-widest mb-2.5">
         <span>{match.group_label ?? match.stage.toUpperCase()} · {new Date(match.kickoff_at).toLocaleString()}</span>
-        {state === 'open' && <span className="text-accent">OPEN</span>}
-        {state === 'locked' && <span className="flex items-center gap-1"><Lock size={11} />LOCKED</span>}
-        {state === 'finished' && prediction?.points_awarded != null &&
-          <span className="bg-accent text-[#06101f] rounded-full px-2 py-1">+{prediction.points_awarded}</span>}
+        {state === 'open' && <span>★ OPEN</span>}
+        {state === 'locked' && <span className="flex items-center gap-1"><Lock size={10} />LOCKED</span>}
+        {state === 'finished' && <span>FT</span>}
       </div>
 
-      <div className="flex items-center gap-3 mb-2.5">
+      {/* Teams + scores */}
+      <div className="flex items-center gap-2 mb-2">
         <Team code={match.home_code} label={match.home_label}
           sub={state !== 'open' && prediction ? `you: ${prediction.home_pred}` : undefined} />
         <Sbox v={state === 'finished' ? match.home_score! : hp} set={editable ? setHp : undefined} real={state === 'finished'} />
       </div>
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2">
         <Team code={match.away_code} label={match.away_label}
           sub={state !== 'open' && prediction ? `you: ${prediction.away_pred}` : undefined} />
         <Sbox v={state === 'finished' ? match.away_score! : ap} set={editable ? setAp : undefined} real={state === 'finished'} />
       </div>
 
-      {state === 'open' &&
-        <button disabled={saving}
+      {/* Lock button */}
+      {state === 'open' && (
+        <button
+          disabled={saving}
           onClick={async () => { setSaving(true); try { await onSave(hp, ap) } finally { setSaving(false) } }}
-          className="w-full mt-3 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-gradient-to-b from-accent2 to-accent text-[#06101f] font-bold text-[13px] disabled:opacity-50">
-          {prediction ? 'Update prediction' : 'Lock prediction'} <Check size={16} />
-        </button>}
-      {state === 'locked' &&
-        <div className="flex items-center gap-1.5 text-[11px] text-muted mt-3"><Clock size={13} /> Prediction locked</div>}
+          className="w-full mt-3 bg-ink text-paper font-display text-[14px] uppercase tracking-widest py-2.5 text-center disabled:opacity-50"
+        >
+          {prediction ? 'Update prediction' : 'Lock prediction'}
+        </button>
+      )}
+      {state === 'locked' && (
+        <div className="flex items-center gap-1.5 text-[11px] font-sans font-700 uppercase tracking-wider mt-3 opacity-70">
+          <Lock size={11} /> Prediction locked
+        </div>
+      )}
     </div>
   )
 }

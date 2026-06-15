@@ -1,16 +1,16 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { User, Lock, ArrowRight } from 'lucide-react'
 import { login, signUp } from '../lib/auth'
 import { useAuth } from '../context/AuthContext'
 
 // Module-level so the input keeps focus across re-renders (a component defined
 // inside Login would remount on every keystroke and drop focus after 1 char).
-function Field({ icon, ...p }: any) {
+function Field({ ...p }: any) {
   return (
-    <div className="flex items-center gap-2.5 px-4 py-3.5 rounded-2xl bg-surface shadow-neu-inset text-txt">
-      {icon}<input {...p} className="bg-transparent outline-none flex-1 text-sm placeholder:text-muted" />
-    </div>
+    <input
+      {...p}
+      className="w-full border-[3px] border-ink px-4 py-3.5 font-display text-[16px] uppercase bg-paper text-ink/70 outline-none placeholder:text-ink/40 tracking-wide"
+    />
   )
 }
 
@@ -31,21 +31,38 @@ export function Login() {
   }
 
   return (
-    <div className="max-w-md mx-auto min-h-screen flex flex-col justify-center gap-4 px-6">
-      <div className="w-20 h-20 rounded-3xl mx-auto grid place-items-center bg-surface shadow-neu text-accent text-3xl">🏆</div>
-      <h1 className="text-center font-extrabold text-2xl tracking-tight">WC26 Predictor</h1>
-      <p className="text-center text-muted text-sm mb-2">Predict every match. Beat your friends.</p>
-      <Field icon={<User size={17} className="text-muted" />} placeholder="Your name" value={name} onChange={(e: any) => setName(e.target.value)} />
-      <Field icon={<Lock size={17} className="text-muted" />} type="password" placeholder="PIN (6+ chars)" value={pin} onChange={(e: any) => setPin(e.target.value)} />
-      {err && <p className="text-red-400 text-xs text-center">{err}</p>}
+    <div className="max-w-md mx-auto min-h-screen flex flex-col justify-center gap-4 px-6 bg-paper">
+      {/* Ball logo */}
+      <div className="w-[84px] h-[84px] rounded-full border-[4px] border-ink bg-orange mx-auto flex items-center justify-center text-[42px]">
+        ⚽
+      </div>
+
+      {/* Title */}
+      <h1 className="font-display text-[34px] uppercase text-center leading-none text-ink">
+        WC26<br />Predictor
+      </h1>
+
+      {/* Slogan */}
+      <div className="bg-blue text-paper font-display text-[17px] uppercase text-center py-2 tracking-widest">
+        Kick it with us
+      </div>
+
+      <Field placeholder="Your name" value={name} onChange={(e: any) => setName(e.target.value)} />
+      <Field type="password" placeholder="PIN ••••••" value={pin} onChange={(e: any) => setPin(e.target.value)} />
+
+      {err && <p className="text-red text-xs text-center font-sans font-700 uppercase tracking-wide">{err}</p>}
+
       <button onClick={submit} disabled={busy}
-        className="flex items-center justify-center gap-2 py-3.5 rounded-2xl bg-gradient-to-b from-accent2 to-accent text-[#06101f] font-bold disabled:opacity-50">
-        {mode === 'login' ? 'Log in' : 'Create account'} <ArrowRight size={18} />
+        className="w-full bg-ink text-paper font-display text-[20px] uppercase tracking-widest py-3.5 border-[3px] border-ink disabled:opacity-50">
+        {mode === 'login' ? 'Log in →' : 'Create account →'}
       </button>
-      <p className="text-center text-muted text-xs">
+
+      <p className="text-center font-sans font-800 text-[12px] uppercase tracking-widest text-ink/60">
         {mode === 'login' ? 'New here? ' : 'Have an account? '}
-        <b className="text-accent2 cursor-pointer" onClick={() => setMode(mode === 'login' ? 'signup' : 'login')}>
-          {mode === 'login' ? 'Create account' : 'Log in'}</b>
+        <span className="text-ink cursor-pointer underline"
+          onClick={() => setMode(mode === 'login' ? 'signup' : 'login')}>
+          {mode === 'login' ? 'Create account' : 'Log in'}
+        </span>
       </p>
     </div>
   )

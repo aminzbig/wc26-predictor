@@ -15,27 +15,41 @@ export function Me() {
     const { error } = await supabase.auth.updateUser({ password: pin })
     setMsg(error ? error.message : 'PIN updated'); setPin('')
   }
+
   return (
     <>
-      <h1 className="text-xl font-bold tracking-tight mb-4">Me</h1>
-      <div className="bg-surface rounded-neu shadow-neu p-5 mb-4">
-        <div className="text-lg font-bold">{player?.name}</div>
-        <div className="grid grid-cols-3 gap-3 mt-4 text-center">
-          {[['Total', me?.total ?? 0], ['Exact', me?.exact_hits ?? 0], ['Diff', me?.diff_hits ?? 0]].map(([k, v]) =>
-            <div key={k} className="rounded-xl bg-surface shadow-neu-inset py-3">
-              <div className="text-accent font-bold text-lg">{v}</div>
-              <div className="text-[10px] text-muted uppercase">{k}</div></div>)}
+      <div className="bg-ink text-paper px-3 py-2 mb-4">
+        <h1 className="font-display text-[20px] uppercase tracking-wide">Me</h1>
+      </div>
+
+      {/* Stats panel */}
+      <div className="border-[3px] border-ink bg-paper p-4 mb-4">
+        <div className="font-display text-[24px] uppercase mb-3">{player?.name}</div>
+        <div className="grid grid-cols-3 gap-0 border-[3px] border-ink">
+          {[['Total', me?.total ?? 0], ['Exact', me?.exact_hits ?? 0], ['Diff', me?.diff_hits ?? 0]].map(([k, v], i) =>
+            <div key={k} className={`py-3 text-center ${i < 2 ? 'border-r-[3px] border-ink' : ''}`}>
+              <div className="font-display text-[28px] text-ink">{v}</div>
+              <div className="font-sans font-900 text-[9px] uppercase tracking-widest text-ink/60">{k}</div>
+            </div>)}
         </div>
       </div>
-      <div className="bg-surface rounded-neu shadow-neu p-5 mb-4">
-        <div className="text-sm font-semibold mb-2">Change PIN</div>
-        <input type="password" value={pin} onChange={e => setPin(e.target.value)} placeholder="New PIN"
-          className="w-full px-4 py-3 rounded-xl bg-surface shadow-neu-inset outline-none text-sm mb-2" />
-        <button onClick={changePin} className="text-xs font-bold text-accent2">Update PIN</button>
-        {msg && <p className="text-xs text-muted mt-2">{msg}</p>}
+
+      {/* Change PIN panel */}
+      <div className="border-[3px] border-ink bg-paper p-4 mb-4">
+        <div className="font-display text-[14px] uppercase tracking-wide mb-2">Change PIN</div>
+        <input type="password" value={pin} onChange={e => setPin(e.target.value)} placeholder="NEW PIN"
+          className="w-full border-[3px] border-ink px-3 py-2.5 font-display text-[14px] uppercase bg-paper text-ink outline-none placeholder:text-ink/40 mb-2" />
+        <button onClick={changePin}
+          className="font-display text-[13px] uppercase tracking-wide bg-ink text-paper px-4 py-2">
+          Update PIN
+        </button>
+        {msg && <p className="font-sans font-700 text-[11px] uppercase tracking-wide text-ink/60 mt-2">{msg}</p>}
       </div>
+
       <button onClick={() => logout().then(() => location.reload())}
-        className="w-full py-3 rounded-2xl bg-surface shadow-neu-sm text-muted font-semibold text-sm">Log out</button>
+        className="w-full py-3 border-[3px] border-ink bg-paper text-ink font-display text-[14px] uppercase tracking-wide">
+        Log out
+      </button>
     </>
   )
 }
