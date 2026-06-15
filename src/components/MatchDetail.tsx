@@ -233,7 +233,7 @@ export function MatchDetail({ match, prediction, onSave, onClose }: {
 
   const mult = match.multiplier ?? 1
   const stageText = match.group_label
-    ? `Group ${match.group_label}`
+    ? match.group_label
     : (STAGE_LABEL[match.stage] ?? match.stage.toUpperCase())
   const headerLine = `×${mult} · ${stageText}`.toUpperCase()
 
