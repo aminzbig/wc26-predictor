@@ -56,7 +56,7 @@ if (unmapped.length) {
 
 // reload with team ids
 const { data: all } = await db.from('matches')
-  .select('id,home_label,away_label,kickoff_at,status,api_fixture_id,home_api_team,away_api_team,prediction,home_lineup')
+  .select('id,home_label,away_label,kickoff_at,status,api_fixture_id,home_api_team,away_api_team,prediction,home_lineup,home_squad')
 const near = (all || []).filter(m => {
   if (!m.api_fixture_id || m.status === 'finished') return false
   const k = new Date(m.kickoff_at).getTime()
@@ -69,11 +69,22 @@ const teamForm = async teamId => {
     const home = f.teams.home.id === teamId
     const gf = home ? f.goals.home : f.goals.away
     const ga = home ? f.goals.away : f.goals.home
-    return { result: gf > ga ? 'W' : gf < ga ? 'L' : 'D', score: `${gf}-${ga}`, opp: (home ? f.teams.away : f.teams.home).name }
+    return { result: gf > ga ? 'W' : gf < ga ? 'L' : 'D', score: `${gf}-${ga}`,
+      opp: (home ? f.teams.away : f.teams.home).name, date: f.fixture.date, comp: f.league.name }
   })
 }
 
-let pred = 0, lns = 0
+// squad fetch, memoized per team for the run
+const squadCache = new Map()
+const teamSquad = async teamId => {
+  if (squadCache.has(teamId)) return squadCache.get(teamId)
+  const r = await api(`players/squads?team=${teamId}`)
+  const players = (r[0]?.players || []).map(p => ({ id: p.id, name: p.name, age: p.age, number: p.number, position: p.position, photo: p.photo }))
+  squadCache.set(teamId, players)
+  return players
+}
+
+let pred = 0, lns = 0, sqd = 0
 for (const m of near) {
   const k = new Date(m.kickoff_at).getTime()
   try {
@@ -96,7 +107,7 @@ for (const m of near) {
       if (lu.length) {
         const pack = e => ({
           formation: e.formation, coach: e.coach?.name ?? null,
-          startXI: (e.startXI || []).map(x => ({ name: x.player.name, number: x.player.number, pos: x.player.pos, grid: x.player.grid })),
+          startXI: (e.startXI || []).map(x => ({ id: x.player.id, name: x.player.name, number: x.player.number, pos: x.player.pos, grid: x.player.grid })),
         })
         const home = lu.find(e => e.team.id === m.home_api_team)
         const away = lu.find(e => e.team.id === m.away_api_team)
@@ -107,6 +118,12 @@ for (const m of near) {
         lns++
       }
     }
+    if (!m.home_squad && m.home_api_team && m.away_api_team) {
+      const home_squad = await teamSquad(m.home_api_team)
+      const away_squad = await teamSquad(m.away_api_team)
+      await db.from('matches').update({ home_squad, away_squad }).eq('id', m.id)
+      sqd++
+    }
   } catch (e) { console.error('match', m.api_fixture_id, e.message) }
 }
-console.log(`done — predictions/form on ${pred} matches, lineups on ${lns} matches`)
+console.log(`done — predictions/form on ${pred} matches, lineups on ${lns}, squads on ${sqd}`)

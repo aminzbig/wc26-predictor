@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Lock } from 'lucide-react'
-import type { Match, Prediction, Lineup } from '../lib/types'
+import type { Match, Prediction, Lineup, SquadPlayer } from '../lib/types'
 import { matchState } from '../lib/matchState'
 import { Flag } from './Flag'
 
@@ -62,24 +62,51 @@ const FORM_BADGE: Record<'W' | 'D' | 'L', string> = {
   L: 'bg-red text-paper',
 }
 
+type FormItem = { result: 'W' | 'D' | 'L'; score: string; opp: string; date?: string; comp?: string }
+
+function formDetailLine(f: FormItem): string {
+  const parts: string[] = [`vs ${f.opp}`]
+  if (f.score) parts.push(f.score.replace('-', '–'))
+  parts.push(f.result)
+  if (f.date) {
+    const d = new Date(f.date)
+    if (!Number.isNaN(d.getTime())) {
+      parts.push(d.toLocaleString(undefined, { month: 'short', day: 'numeric' }))
+    }
+  }
+  if (f.comp) parts.push(f.comp)
+  return parts.join(' · ').toUpperCase()
+}
+
 function FormTeamRow({ label, fallback, form }: {
-  label: string | null; fallback: string; form: { result: 'W' | 'D' | 'L'; score: string; opp: string }[]
+  label: string | null; fallback: string; form: FormItem[]
 }) {
+  const [open, setOpen] = useState<number | null>(null)
   if (!form || form.length === 0) return null
+  const shown = form.slice(0, 5)
   return (
-    <div className="flex items-center gap-2 mb-1.5 last:mb-0">
-      <div className="font-display text-[14px] uppercase tracking-wide w-12 flex-none">{shortLabel(label, fallback)}</div>
-      <div className="flex gap-1">
-        {form.slice(0, 5).map((f, i) => (
-          <div
-            key={i}
-            title={`${f.result} ${f.score} vs ${f.opp}`}
-            className={`w-[22px] h-[22px] grid place-items-center font-display text-[12px] leading-none border-2 border-ink ${FORM_BADGE[f.result]}`}
-          >
-            {f.result}
-          </div>
-        ))}
+    <div className="mb-1.5 last:mb-0">
+      <div className="flex items-center gap-2">
+        <div className="font-display text-[14px] uppercase tracking-wide w-12 flex-none">{shortLabel(label, fallback)}</div>
+        <div className="flex gap-1">
+          {shown.map((f, i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={() => setOpen(open === i ? null : i)}
+              title={`${f.result} ${f.score} vs ${f.opp}`}
+              className={`w-[22px] h-[22px] grid place-items-center font-display text-[12px] leading-none border-2 border-ink ${FORM_BADGE[f.result]}`}
+            >
+              {f.result}
+            </button>
+          ))}
+        </div>
       </div>
+      {open != null && shown[open] && (
+        <div className="mt-1 text-[10px] font-sans font-700 uppercase tracking-wider opacity-80">
+          {formDetailLine(shown[open])}
+        </div>
+      )}
     </div>
   )
 }
@@ -97,9 +124,22 @@ function FormSection({ match }: { match: Match }) {
   )
 }
 
-function FormationPitch({ label, fallback, lineup }: {
-  label: string | null; fallback: string; lineup: Lineup
+const POS_WORD: Record<string, string> = { G: 'Goalkeeper', D: 'Defender', M: 'Midfielder', F: 'Forward' }
+
+function expandPos(pos: string | null): string {
+  if (!pos) return ''
+  return POS_WORD[pos.toUpperCase()] ?? pos
+}
+
+type PlayerInfo = {
+  key: string; id: number | null; name: string; number: number | null; position: string
+  photo: string | null; age: number | null
+}
+
+function FormationPitch({ label, fallback, lineup, squad }: {
+  label: string | null; fallback: string; lineup: Lineup; squad?: SquadPlayer[] | null
 }) {
+  const [open, setOpen] = useState<PlayerInfo | null>(null)
   if (!lineup || !lineup.startXI || lineup.startXI.length === 0) return null
 
   const placed = lineup.startXI.filter(pl => pl.grid)
@@ -113,7 +153,7 @@ function FormationPitch({ label, fallback, lineup }: {
   const rowNums = [...rows.keys()]
   const maxRow = rowNums.length ? Math.max(...rowNums) : 1
 
-  const dots: { top: number; left: number; number: number | null; surname: string; key: string }[] = []
+  const dots: { top: number; left: number; number: number | null; surname: string; key: string; info: PlayerInfo }[] = []
   for (const [row, players] of rows) {
     const topPct = 100 - (row / (maxRow + 1)) * 100
     const sorted = [...players].sort(
@@ -122,10 +162,21 @@ function FormationPitch({ label, fallback, lineup }: {
     sorted.forEach((pl, i) => {
       const leftPct = ((i + 1) / (sorted.length + 1)) * 100
       const parts = pl.name.trim().split(/\s+/)
+      const sq = pl.id != null && squad ? squad.find(s => s.id === pl.id) : undefined
+      const info: PlayerInfo = {
+        key: `${row}-${i}-${pl.name}`,
+        id: pl.id ?? null,
+        name: sq?.name ?? pl.name,
+        number: sq?.number ?? pl.number,
+        position: sq?.position ?? expandPos(pl.pos),
+        photo: sq?.photo ?? null,
+        age: sq?.age ?? null,
+      }
       dots.push({
         top: topPct, left: leftPct, number: pl.number,
         surname: parts[parts.length - 1] || pl.name,
         key: `${row}-${i}-${pl.name}`,
+        info,
       })
     })
   }
@@ -143,9 +194,37 @@ function FormationPitch({ label, fallback, lineup }: {
         <div className="absolute left-0 right-0 top-1/2 h-[2px] bg-ink/40 -translate-y-1/2" />
         {/* center circle */}
         <div className="absolute left-1/2 top-1/2 w-[26%] aspect-square rounded-full border-2 border-ink/40 -translate-x-1/2 -translate-y-1/2" />
+
+        {/* Player info popup pinned to top of the pitch */}
+        {open && (
+          <div className="absolute top-2 left-2 right-2 z-20 bg-paper border-[3px] border-ink p-2 flex items-center gap-2 text-ink">
+            {open.photo && (
+              <img src={open.photo} alt="" className="w-[44px] h-[44px] border-2 border-ink object-cover flex-none" />
+            )}
+            <div className="min-w-0 flex-1">
+              <div className="font-display text-[16px] uppercase leading-none truncate">
+                {open.number != null ? `${open.number} · ` : ''}{open.name}
+              </div>
+              <div className="text-[10px] font-sans font-700 uppercase tracking-wider opacity-80">
+                {open.position}{open.age != null ? ` · AGE ${open.age}` : ''}
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setOpen(null)}
+              aria-label="Close"
+              className="w-[24px] h-[24px] grid place-items-center bg-ink text-paper flex-none"
+            >
+              <X size={14} />
+            </button>
+          </div>
+        )}
+
         {dots.map(d => (
-          <div
+          <button
             key={d.key}
+            type="button"
+            onClick={() => setOpen(prev => (prev && prev.key === d.key ? null : d.info))}
             className="absolute flex flex-col items-center"
             style={{ top: `${d.top}%`, left: `${d.left}%`, transform: 'translate(-50%,-50%)' }}
           >
@@ -155,7 +234,7 @@ function FormationPitch({ label, fallback, lineup }: {
             <div className="mt-0.5 max-w-[52px] text-[8px] font-sans font-700 bg-ink/70 text-paper px-1 leading-tight truncate">
               {d.surname}
             </div>
-          </div>
+          </button>
         ))}
       </div>
     </div>
@@ -176,8 +255,8 @@ function LineupsSection({ match }: { match: Match }) {
         </div>
       ) : (
         <>
-          {hasHome && <FormationPitch label={match.home_label} fallback="Home" lineup={hl!} />}
-          {hasAway && <FormationPitch label={match.away_label} fallback="Away" lineup={al!} />}
+          {hasHome && <FormationPitch label={match.home_label} fallback="Home" lineup={hl!} squad={match.home_squad} />}
+          {hasAway && <FormationPitch label={match.away_label} fallback="Away" lineup={al!} squad={match.away_squad} />}
         </>
       )}
     </div>

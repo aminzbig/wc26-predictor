@@ -13,12 +13,15 @@ export interface Match {
   multiplier: number; status: 'scheduled' | 'finished'
   prob_home: number | null; prob_draw: number | null; prob_away: number | null
   prediction?: { winner: string | null; comment: string | null; advice: string | null; percent: { home: string; draw: string; away: string } | null; goals: { home: number | null; away: number | null } | null } | null
-  home_form?: { result: 'W' | 'D' | 'L'; score: string; opp: string }[] | null
-  away_form?: { result: 'W' | 'D' | 'L'; score: string; opp: string }[] | null
+  home_form?: { result: 'W' | 'D' | 'L'; score: string; opp: string; date?: string; comp?: string }[] | null
+  away_form?: { result: 'W' | 'D' | 'L'; score: string; opp: string; date?: string; comp?: string }[] | null
   home_lineup?: Lineup | null
   away_lineup?: Lineup | null
+  home_squad?: SquadPlayer[] | null
+  away_squad?: SquadPlayer[] | null
 }
-export interface LineupPlayer { name: string; number: number | null; pos: string | null; grid: string | null }
+export interface SquadPlayer { id: number; name: string; age: number | null; number: number | null; position: string; photo: string }
+export interface LineupPlayer { id?: number; name: string; number: number | null; pos: string | null; grid: string | null }
 export interface Lineup { formation: string | null; coach: string | null; startXI: LineupPlayer[] }
 export interface Prediction {
   id: string; player_id: string; match_id: string

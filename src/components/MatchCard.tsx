@@ -11,18 +11,41 @@ function panelColor(match_no: number) {
   return PANEL_COLORS[match_no % PANEL_COLORS.length]
 }
 
-// Module-level components: defining these inside MatchCard would give them a new
-// identity each render, remounting the score <input> and dropping focus after
-// one keystroke.
-function Sbox({ v, set }: { v: number; set?: (n: number) => void; real?: boolean }) {
+// Module-level components keep a stable identity across renders.
+//
+// Tap stepper: no text <input>, so tapping never opens the mobile keyboard that
+// would cover the card. "+"/"−" mutate the value; both stop propagation so they
+// don't open the detail view or trigger a swipe. When read-only (no `set`) we
+// render just the static number box.
+function StepBtn({ label, onTap }: { label: string; onTap: () => void }) {
   return (
-    <input
-      type="number" min={0} value={v} disabled={!set}
-      onChange={e => set?.(Math.max(0, +e.target.value))}
-      onClick={e => e.stopPropagation()}
+    <button
+      type="button"
+      onClick={e => { e.stopPropagation(); onTap() }}
       onPointerDown={e => e.stopPropagation()}
-      className={`w-[52px] h-[58px] text-center font-display text-[32px] border-[3px] border-ink bg-paper text-ink outline-none flex-none ${!set ? 'opacity-90' : ''}`}
-    />
+      className="w-[52px] h-[28px] grid place-items-center font-display text-[20px] leading-none text-ink select-none"
+    >
+      {label}
+    </button>
+  )
+}
+
+function Sbox({ v, set }: { v: number; set?: (n: number) => void }) {
+  if (!set) {
+    return (
+      <div className="w-[52px] h-[58px] grid place-items-center font-display text-[32px] border-[3px] border-ink bg-paper text-ink flex-none opacity-90">
+        {v}
+      </div>
+    )
+  }
+  return (
+    <div className="flex-none flex flex-col items-center">
+      <StepBtn label="+" onTap={() => set(Math.min(20, v + 1))} />
+      <div className="w-[52px] h-[44px] grid place-items-center font-display text-[30px] leading-none border-[3px] border-ink bg-paper text-ink">
+        {v}
+      </div>
+      <StepBtn label="−" onTap={() => set(Math.max(0, v - 1))} />
+    </div>
   )
 }
 
