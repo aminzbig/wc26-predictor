@@ -2,7 +2,9 @@ import { useEffect, useMemo, useState } from 'react'
 import { useMatches } from '../hooks/useMatches'
 import { usePredictions } from '../hooks/usePredictions'
 import { MatchDeck } from '../components/MatchDeck'
+import { MatchGrid } from '../components/MatchGrid'
 import { MatchDetail } from '../components/MatchDetail'
+import { ViewToggle, type View } from '../components/ViewToggle'
 import { matchState } from '../lib/matchState'
 import type { Match } from '../lib/types'
 
@@ -31,6 +33,7 @@ export function Matches() {
   const { matches, loading } = useMatches()
   const { byMatch, save } = usePredictions()
   const [filter, setFilter] = useState<Filter>('all')
+  const [view, setView] = useState<View>('deck')
   const [index, setIndex] = useState(-1)
   const [selected, setSelected] = useState<Match | null>(null)
 
@@ -81,7 +84,7 @@ export function Matches() {
         {/* Poster header */}
         <div className="bg-ink text-paper px-3 py-2 mb-3 flex justify-between items-center shrink-0">
           <h1 className="font-display text-[20px] uppercase tracking-wide">Matches</h1>
-          <span className="font-sans font-900 text-[10px] uppercase tracking-widest text-yellow">Swipe or tap</span>
+          <ViewToggle view={view} setView={setView} />
         </div>
 
         {/* Filter chips */}
@@ -96,16 +99,18 @@ export function Matches() {
         <div className="flex-1 min-h-0">
           {shown.length === 0
             ? <p className="font-sans font-700 text-ink/60 uppercase text-sm tracking-wide">No matches here.</p>
-            : (
-              <MatchDeck
-                matches={shown}
-                index={safeIndex}
-                setIndex={setIndex}
-                byMatch={byMatch}
-                onSave={save}
-                onOpen={setSelected}
-              />
-            )}
+            : view === 'grid'
+              ? <MatchGrid matches={shown} byMatch={byMatch} onOpen={setSelected} />
+              : (
+                <MatchDeck
+                  matches={shown}
+                  index={safeIndex}
+                  setIndex={setIndex}
+                  byMatch={byMatch}
+                  onSave={save}
+                  onOpen={setSelected}
+                />
+              )}
         </div>
       </div>
 

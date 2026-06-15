@@ -22,7 +22,9 @@ function Row({ code, label, value }: { code: string | null; label: string | null
   return (
     <div className="flex items-center gap-1.5 min-w-0">
       <Flag code={code} label={label} size="sm" />
-      <span className="font-display text-[14px] leading-none uppercase tracking-wide truncate flex-1 min-w-0">{label ?? '—'}</span>
+      {/* clamp to 2 lines max so a long name (e.g. Bosnia & Herzegovina) never
+          blows out the tile height — every tile stays the same size. */}
+      <span className="font-display text-[13px] leading-[0.95] uppercase tracking-wide line-clamp-2 flex-1 min-w-0">{label ?? '—'}</span>
       <span className={`w-[24px] h-[24px] grid place-items-center border-2 border-ink bg-paper font-display text-[15px] leading-none flex-none ${value == null ? 'text-ink/30' : 'text-ink'}`}>
         {value ?? '–'}
       </span>
@@ -44,7 +46,7 @@ export function MatchTile({ match, prediction, onOpen }: {
       type="button"
       onClick={onOpen}
       whileTap={{ scale: 0.97 }}
-      className={`${panelColor(match.match_no ?? 0)} border-[3px] border-ink p-2 relative overflow-hidden text-left flex flex-col gap-2 min-h-[112px]`}
+      className={`${panelColor(match.match_no ?? 0)} border-[3px] border-ink p-2.5 relative overflow-hidden text-left flex flex-col w-full h-full min-h-[118px]`}
     >
       {/* Starburst points badge, same idea as the big card but smaller */}
       {finished && prediction?.points_awarded != null && (
@@ -57,7 +59,7 @@ export function MatchTile({ match, prediction, onOpen }: {
       )}
 
       {/* Header: group/stage · date — status chip */}
-      <div className="flex items-center justify-between text-[8px] font-sans font-900 uppercase tracking-widest leading-none gap-1">
+      <div className="shrink-0 flex items-center justify-between text-[8px] font-sans font-900 uppercase tracking-widest leading-none gap-1">
         <span className="truncate">
           {match.group_label ?? match.stage.toUpperCase()} · {new Date(match.kickoff_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}
         </span>
@@ -68,8 +70,8 @@ export function MatchTile({ match, prediction, onOpen }: {
         {finished && <span className="flex-none">FT</span>}
       </div>
 
-      {/* Two team rows */}
-      <div className="flex flex-col gap-1.5">
+      {/* Two team rows — centered in the remaining space so every tile matches */}
+      <div className="flex-1 min-h-0 flex flex-col justify-center gap-2">
         <Row code={match.home_code} label={match.home_label} value={teamValue(match, prediction, finished, live, 'home')} />
         <Row code={match.away_code} label={match.away_label} value={teamValue(match, prediction, finished, live, 'away')} />
       </div>
