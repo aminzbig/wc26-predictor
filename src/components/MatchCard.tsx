@@ -28,10 +28,10 @@ function StepBtn({ label, onTap }: { label: string; onTap: () => void }) {
   )
 }
 
-function Sbox({ v, set }: { v: number; set?: (n: number) => void }) {
+function Sbox({ v, set, dim }: { v: number; set?: (n: number) => void; dim?: boolean }) {
   if (!set) {
     return (
-      <div className={`${BOX_W} h-[clamp(40px,6vh,58px)] flex items-center justify-center leading-none font-display text-[clamp(22px,4.4vh,32px)] border-[3px] border-ink bg-paper text-ink flex-none opacity-90`}>
+      <div className={`${BOX_W} h-[clamp(40px,6vh,58px)] flex items-center justify-center leading-none font-display text-[clamp(22px,4.4vh,32px)] border-[3px] border-ink bg-paper flex-none ${dim ? 'text-ink/40' : 'text-ink opacity-90'}`}>
         {v}
       </div>
     )
@@ -87,6 +87,7 @@ export function MatchCard({ match, prediction, onSave, onOpen }:
   const [ap, setAp] = useState(prediction?.away_pred ?? 0)
   const [saving, setSaving] = useState(false)
   const editable = state === 'open'
+  const live = state === 'locked' && match.live_home != null // in progress with a known score
 
   // keep the score in sync when the saved prediction changes (e.g. saved from the detail view)
   useEffect(() => {
@@ -115,7 +116,9 @@ export function MatchCard({ match, prediction, onSave, onOpen }:
       <div className="flex justify-between items-center text-[10px] font-sans font-900 uppercase tracking-widest shrink-0">
         <span className="truncate pr-2">{match.group_label ?? match.stage.toUpperCase()} · {new Date(match.kickoff_at).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
         {state === 'open' && <span className="shrink-0">★ OPEN</span>}
-        {state === 'locked' && <span className="flex items-center gap-1 shrink-0"><Lock size={10} />LOCKED</span>}
+        {state === 'locked' && (live
+          ? <span className="shrink-0">● LIVE{match.live_minute ? ` ${match.live_minute}'` : ''}</span>
+          : <span className="flex items-center gap-1 shrink-0"><Lock size={10} />LOCKED</span>)}
         {state === 'finished' && <span className="shrink-0">FT</span>}
       </div>
 
@@ -124,13 +127,20 @@ export function MatchCard({ match, prediction, onSave, onOpen }:
         <div className="flex items-center gap-2.5">
           <Team code={match.home_code} label={match.home_label}
             sub={state !== 'open' && prediction ? `you: ${prediction.home_pred}` : undefined} />
-          <Sbox v={state === 'finished' ? match.home_score! : hp} set={editable ? setHp : undefined} />
+          <Sbox v={state === 'finished' ? match.home_score! : hp} set={editable ? setHp : undefined} dim={live} />
         </div>
-        <div className="font-display text-[12px] uppercase tracking-[0.3em] opacity-40 text-center">vs</div>
+        {live ? (
+          <div className="text-center">
+            <div className="font-display text-[clamp(24px,5vh,36px)] leading-none">{match.live_home} <span className="opacity-40">–</span> {match.live_away}</div>
+            <div className="font-sans font-900 text-[9px] uppercase tracking-widest mt-1 opacity-80">Live{match.live_minute ? ` · ${match.live_minute}'` : ''}</div>
+          </div>
+        ) : (
+          <div className="font-display text-[12px] uppercase tracking-[0.3em] opacity-40 text-center">vs</div>
+        )}
         <div className="flex items-center gap-2.5">
           <Team code={match.away_code} label={match.away_label}
             sub={state !== 'open' && prediction ? `you: ${prediction.away_pred}` : undefined} />
-          <Sbox v={state === 'finished' ? match.away_score! : ap} set={editable ? setAp : undefined} />
+          <Sbox v={state === 'finished' ? match.away_score! : ap} set={editable ? setAp : undefined} dim={live} />
         </div>
       </div>
 
@@ -149,7 +159,7 @@ export function MatchCard({ match, prediction, onSave, onOpen }:
         )}
         {state === 'locked' && (
           <div className="flex items-center gap-1.5 text-[11px] font-sans font-700 uppercase tracking-wider mt-2.5 opacity-70">
-            <Lock size={11} /> Prediction locked · tap for details
+            {live ? <>● Live now · your pick in grey · tap for details</> : <><Lock size={11} /> Prediction locked · tap for details</>}
           </div>
         )}
         {state === 'finished' && (
