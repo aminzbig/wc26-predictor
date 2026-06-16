@@ -1,18 +1,20 @@
 import { useState } from 'react'
 import {
-  PALETTE, FONTS, colorClass, fontClass, isLight, validBody, matchLabel,
-  type SocialColor, type SocialFont, type MatchLite,
+  PALETTE, FONTS, SCALES, colorClass, fontClass, isLight, validBody, flagEmoji,
+  type SocialColor, type SocialFont, type SocialScale, type MatchLite,
 } from '../lib/social'
 
 const MAX = 280
+const BASE = 16 // composer preview base px, scaled by the chosen size
 
 export function SocialComposer({ matchList, onPost }: {
   matchList: MatchLite[]
-  onPost: (body: string, color: SocialColor, font: SocialFont, matchId: string | null) => void
+  onPost: (body: string, color: SocialColor, font: SocialFont, scale: SocialScale, matchId: string | null) => void
 }) {
   const [body, setBody] = useState('')
-  const [color, setColor] = useState<SocialColor>('orange')
+  const [color, setColor] = useState<SocialColor>('paper')
   const [font, setFont] = useState<SocialFont>('sans')
+  const [scale, setScale] = useState<SocialScale>(1)
   const [matchId, setMatchId] = useState<string>('')
   const [pickMatch, setPickMatch] = useState(false)
 
@@ -20,7 +22,7 @@ export function SocialComposer({ matchList, onPost }: {
   const dark = isLight(color) // blue/red → light text on the live preview
   function submit() {
     if (!can) return
-    onPost(body.trim(), color, font, matchId || null)
+    onPost(body.trim(), color, font, scale, matchId || null)
     setBody(''); setMatchId(''); setPickMatch(false)
   }
 
@@ -33,7 +35,8 @@ export function SocialComposer({ matchList, onPost }: {
         onChange={e => setBody(e.target.value)}
         rows={2}
         placeholder="Share something with the group…"
-        className={`w-full resize-none bg-transparent outline-none placeholder:opacity-50 text-[16px] ${fontClass(font)} ${dark ? 'text-paper placeholder:text-paper' : 'text-ink placeholder:text-ink'}`}
+        style={{ fontSize: BASE * scale }}
+        className={`w-full resize-none bg-transparent outline-none leading-tight placeholder:opacity-50 ${fontClass(font)} ${dark ? 'text-paper placeholder:text-paper' : 'text-ink placeholder:text-ink'}`}
       />
 
       {/* color swatches */}
@@ -64,6 +67,21 @@ export function SocialComposer({ matchList, onPost }: {
         ))}
       </div>
 
+      {/* text size picker */}
+      <div className="flex gap-1.5 mt-2">
+        {SCALES.map(s => (
+          <button
+            key={s.value}
+            type="button"
+            aria-label={`size ${s.value}`}
+            onClick={() => setScale(s.value)}
+            className={`px-2.5 py-0.5 text-[13px] font-display leading-none border-2 border-ink bg-paper text-ink ${scale === s.value ? 'ring-2 ring-ink ring-offset-1' : ''}`}
+          >
+            {s.label}
+          </button>
+        ))}
+      </div>
+
       {pickMatch && matchList.length > 0 && (
         <select
           value={matchId}
@@ -73,7 +91,7 @@ export function SocialComposer({ matchList, onPost }: {
           <option value="">No match</option>
           {matchList.map(m => (
             <option key={m.id} value={m.id}>
-              {matchLabel(m)}
+              {flagEmoji(m.home_code)} {flagEmoji(m.away_code)}
             </option>
           ))}
         </select>

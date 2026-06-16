@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import {
   upsertPost, removePost, bump, toView, addReaction,
   type SocialPostRow, type PlayerLite, type MatchLite, type PostView,
-  type Reaction, type SocialColor, type SocialFont,
+  type Reaction, type SocialColor, type SocialFont, type SocialScale,
 } from '../lib/social'
 
 // "Reactions I tapped" live only on this device — we don't track per-user reactions
@@ -59,10 +59,10 @@ export function useSocialPosts() {
     [rows, players, matches],
   )
 
-  async function post(body: string, color: SocialColor, font: SocialFont, matchId: string | null) {
+  async function post(body: string, color: SocialColor, font: SocialFont, scale: SocialScale, matchId: string | null) {
     if (!player) return
     await supabase.from('social_posts').insert({
-      author_id: player.id, body, color, font, match_id: matchId,
+      author_id: player.id, body, color, font, scale, match_id: matchId,
     })
     // INSERT echo via realtime adds the card.
   }

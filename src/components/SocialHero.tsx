@@ -70,7 +70,7 @@ export function SocialHero({ view, canDelete, tapped, onReact, onDelete }: {
             <button type="button" aria-label="delete" onClick={onDelete}><X size={16} /></button>
           )}
         </div>
-        <p className={`${fontClass(view.font)} text-[23px] font-900 leading-[1.2] tracking-[-0.4px] my-4`}>{view.body}</p>
+        <p style={{ fontSize: 23 * view.scale }} className={`${fontClass(view.font)} font-900 leading-[1.2] tracking-[-0.4px] my-4`}>{view.body}</p>
         <ReactionBar row={view} color={view.color} size="hero" tapped={tapped} onReact={handleReact} />
       </div>
     </div>

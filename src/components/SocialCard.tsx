@@ -27,7 +27,7 @@ export function SocialCard({ view, canDelete, tapped, onReact, onDelete }: {
           </button>
         )}
       </div>
-      <p className={`${fontClass(view.font)} text-[14px] font-800 leading-snug`}>{view.body}</p>
+      <p style={{ fontSize: 14 * view.scale }} className={`${fontClass(view.font)} font-800 leading-snug`}>{view.body}</p>
       <ReactionBar row={view} color={view.color} size="card" tapped={tapped} onReact={onReact} />
     </div>
   )

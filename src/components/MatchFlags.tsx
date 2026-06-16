@@ -1,11 +1,12 @@
-import { Flag } from './Flag'
+import { flagEmoji } from '../lib/social'
 
-// The two teams of a tagged match, shown as flags (more readable than codes).
+// The two teams of a tagged match, shown as flag emoji (more readable than codes,
+// and no flag-image CSS dependency).
 export function MatchFlags({ home, away }: { home: string | null; away: string | null }) {
   return (
-    <span className="inline-flex items-center gap-1 border-2 border-ink rounded-full px-1.5 py-0.5 bg-paper">
-      <Flag code={home} size="sm" />
-      <Flag code={away} size="sm" />
+    <span className="inline-flex items-center gap-0.5 border-2 border-ink rounded-full px-2 py-0.5 bg-paper text-[14px] leading-none">
+      <span>{flagEmoji(home)}</span>
+      <span>{flagEmoji(away)}</span>
     </span>
   )
 }

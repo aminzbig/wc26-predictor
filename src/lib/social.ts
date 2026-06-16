@@ -1,6 +1,7 @@
 export type Reaction = 'heart' | 'up' | 'down' | 'sandal' | 'dead'
 export type SocialColor = 'orange' | 'green' | 'blue' | 'yellow' | 'red' | 'paper'
 export type SocialFont = 'sans' | 'impact' | 'hand' | 'mono' | 'serif' | 'pixel'
+export type SocialScale = 0.5 | 1 | 2 | 3
 
 export interface SocialPostRow {
   id: string
@@ -8,6 +9,7 @@ export interface SocialPostRow {
   body: string
   color: SocialColor
   font: SocialFont
+  scale: SocialScale
   match_id: string | null
   heart_count: number
   up_count: number
@@ -74,7 +76,8 @@ const COLOR_CLASS: Record<SocialColor, string> = {
   red:    'bg-red text-paper',
   paper:  'bg-paper',
 }
-export const PALETTE: SocialColor[] = ['orange', 'green', 'blue', 'yellow', 'red', 'paper']
+// 'paper' (off-white) is first so it's the default card look; orange moves to the end.
+export const PALETTE: SocialColor[] = ['paper', 'green', 'blue', 'yellow', 'red', 'orange']
 export const colorClass = (c: SocialColor): string => COLOR_CLASS[c]
 export const isLight = (c: SocialColor): boolean => c === 'blue' || c === 'red'
 
@@ -97,6 +100,14 @@ export const FONTS: { key: SocialFont; label: string }[] = [
 export const fontClass = (f: SocialFont): string => FONT_CLASS[f]
 export const validFont = (f: string): f is SocialFont => f in FONT_CLASS
 
+export const SCALES: { value: SocialScale; label: string }[] = [
+  { value: 0.5, label: '½×' },
+  { value: 1,   label: '1×' },
+  { value: 2,   label: '2×' },
+  { value: 3,   label: '3×' },
+]
+export const validScale = (n: number): n is SocialScale => SCALES.some(s => s.value === n)
+
 export const validBody = (s: string): boolean => s.trim().length >= 1 && s.length <= 280
 export const validColor = (c: string): c is SocialColor => (PALETTE as string[]).includes(c)
 
@@ -108,6 +119,17 @@ export function matchLabel(m: MatchLite): string {
   const h = (m.home_code ?? m.home_label ?? '?').toUpperCase()
   const a = (m.away_code ?? m.away_label ?? '?').toUpperCase()
   return `${h}–${a}`
+}
+
+// ISO-3166-1 alpha-2 code → regional-indicator flag emoji (🇵🇹). Falls back to a
+// white flag for missing/invalid codes (e.g. non-country team labels).
+export function flagEmoji(code: string | null): string {
+  if (!code || code.length !== 2) return '🏳️'
+  const cc = code.toUpperCase()
+  const a = cc.charCodeAt(0) - 65
+  const b = cc.charCodeAt(1) - 65
+  if (a < 0 || a > 25 || b < 0 || b > 25) return '🏳️'
+  return String.fromCodePoint(0x1f1e6 + a, 0x1f1e6 + b)
 }
 
 export function toView(

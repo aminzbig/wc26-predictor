@@ -1,13 +1,13 @@
 import { describe, expect, test } from 'vitest'
 import {
   REACTIONS, hottest, bump, relativeTime, colorClass, isLight,
-  validBody, validColor, validFont, fontClass, addReaction, matchLabel,
+  validBody, validColor, validFont, fontClass, validScale, addReaction, matchLabel, flagEmoji,
   toView, upsertPost, removePost,
   type SocialPostRow,
 } from './social'
 
 const row = (over: Partial<SocialPostRow> = {}): SocialPostRow => ({
-  id: 'a', author_id: 'u1', body: 'hi', color: 'orange', font: 'sans', match_id: null,
+  id: 'a', author_id: 'u1', body: 'hi', color: 'orange', font: 'sans', scale: 1, match_id: null,
   heart_count: 0, up_count: 0, down_count: 0, sandal_count: 0, dead_count: 0,
   created_at: '2026-06-15T00:00:00.000Z', ...over,
 })
@@ -54,6 +54,13 @@ describe('social helpers', () => {
     expect(fontClass('impact')).toBe('font-display')
     expect(fontClass('pixel')).toBe('font-pixel')
   })
+  test('validScale accepts only ½×/1×/2×/3×', () => {
+    expect(validScale(0.5)).toBe(true)
+    expect(validScale(1)).toBe(true)
+    expect(validScale(3)).toBe(true)
+    expect(validScale(1.5)).toBe(false)
+    expect(validScale(4)).toBe(false)
+  })
   test('addReaction appends only once (your tapped set)', () => {
     expect(addReaction([], 'heart')).toEqual(['heart'])
     expect(addReaction(['heart'], 'dead')).toEqual(['heart', 'dead'])
@@ -62,6 +69,12 @@ describe('social helpers', () => {
   test('matchLabel uppercases codes', () => {
     expect(matchLabel({ id: 'm', home_code: 'br', away_code: 'ar', home_label: null, away_label: null }))
       .toBe('BR–AR')
+  })
+  test('flagEmoji converts ISO codes; falls back for invalid/missing', () => {
+    expect(flagEmoji('pt')).toBe('🇵🇹')
+    expect(flagEmoji('BR')).toBe('🇧🇷')
+    expect(flagEmoji(null)).toBe('🏳️')
+    expect(flagEmoji('xyz')).toBe('🏳️')
   })
   test('toView resolves author + match label', () => {
     const v = toView(row({ author_id: 'u1', match_id: 'm' }),
