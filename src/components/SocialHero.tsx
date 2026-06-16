@@ -62,7 +62,6 @@ export function SocialHero({ view, canDelete, tapped, onReact, onDelete }: {
         <div className="flex items-center gap-2.5">
           <Flag code={view.author_flag} label={view.author_name} size="md" />
           <span className="font-display uppercase text-[18px] tracking-wide">{view.author_name}</span>
-          {view.match_label && <MatchFlags home={view.match_home} away={view.match_away} />}
           <span className={`ml-auto text-[12px] font-900 ${light ? 'opacity-80' : 'opacity-70'}`}>
             {relativeTime(view.created_at)}
           </span>
@@ -70,6 +69,9 @@ export function SocialHero({ view, canDelete, tapped, onReact, onDelete }: {
             <button type="button" aria-label="delete" onClick={onDelete}><X size={16} /></button>
           )}
         </div>
+        {view.match_label && (
+          <div className="mt-3"><MatchFlags home={view.match_home} away={view.match_away} /></div>
+        )}
         <p style={{ fontSize: 23 * view.scale }} className={`${fontClass(view.font)} font-900 leading-[1.2] tracking-[-0.4px] my-4`}>{view.body}</p>
         <ReactionBar row={view} color={view.color} size="hero" tapped={tapped} onReact={handleReact} />
       </div>
