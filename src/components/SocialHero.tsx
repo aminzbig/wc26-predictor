@@ -72,7 +72,7 @@ export function SocialHero({ view, canDelete, tapped, onReact, onDelete }: {
         {view.match_label && (
           <div className="mt-3"><MatchFlags home={view.match_home} away={view.match_away} /></div>
         )}
-        <p style={{ fontSize: 23 * view.scale }} className={`${fontClass(view.font)} font-900 leading-[1.2] tracking-[-0.4px] my-4`}>{view.body}</p>
+        <p style={{ fontSize: 23 * view.scale }} className={`${fontClass(view.font)} font-900 leading-[1.2] tracking-[-0.4px] mt-3 mb-4`}>{view.body}</p>
         <ReactionBar row={view} color={view.color} size="hero" tapped={tapped} onReact={handleReact} />
       </div>
     </div>
