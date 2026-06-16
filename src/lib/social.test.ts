@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import {
   REACTIONS, hottest, bump, relativeTime, colorClass, isLight,
-  validBody, validColor, validFont, fontClass, validScale, addReaction, matchLabel, flagEmoji,
+  validBody, validColor, validFont, fontClass, validScale, addReaction, matchLabel, flagEmoji, matchOption,
   toView, upsertPost, removePost,
   type SocialPostRow,
 } from './social'
@@ -67,7 +67,7 @@ describe('social helpers', () => {
     expect(addReaction(['heart'], 'heart')).toEqual(['heart'])
   })
   test('matchLabel uppercases codes', () => {
-    expect(matchLabel({ id: 'm', home_code: 'br', away_code: 'ar', home_label: null, away_label: null }))
+    expect(matchLabel({ id: 'm', home_code: 'br', away_code: 'ar', home_label: null, away_label: null, kickoff_at: '2026-06-16T18:00:00.000Z' }))
       .toBe('BR–AR')
   })
   test('flagEmoji converts ISO codes; falls back for invalid/missing', () => {
@@ -76,10 +76,15 @@ describe('social helpers', () => {
     expect(flagEmoji(null)).toBe('🏳️')
     expect(flagEmoji('xyz')).toBe('🏳️')
   })
+  test('matchOption: flags when teams set, "Upcoming" when undecided', () => {
+    const base = { id: 'm', home_label: null, away_label: null, kickoff_at: '2026-06-16T18:00:00.000Z' }
+    expect(matchOption({ ...base, home_code: 'br', away_code: 'ar' })).toContain('🇧🇷')
+    expect(matchOption({ ...base, home_code: null, away_code: null })).toContain('Upcoming')
+  })
   test('toView resolves author + match label', () => {
     const v = toView(row({ author_id: 'u1', match_id: 'm' }),
       { u1: { name: 'Rafa', flag_code: 'br' } },
-      { m: { id: 'm', home_code: 'br', away_code: 'ar', home_label: null, away_label: null } })
+      { m: { id: 'm', home_code: 'br', away_code: 'ar', home_label: null, away_label: null, kickoff_at: '2026-06-16T18:00:00.000Z' } })
     expect(v.author_name).toBe('Rafa')
     expect(v.author_flag).toBe('br')
     expect(v.match_label).toBe('BR–AR')

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import {
-  upsertPost, removePost, bump, toView, addReaction,
+  upsertPost, removePost, bump, toView, addReaction, byKickoff,
   type SocialPostRow, type PlayerLite, type MatchLite, type PostView,
   type Reaction, type SocialColor, type SocialFont, type SocialScale,
 } from '../lib/social'
@@ -27,7 +27,7 @@ export function useSocialPosts() {
     async function load() {
       const [p, m, posts] = await Promise.all([
         supabase.from('players').select('id, name, flag_code'),
-        supabase.from('matches').select('id, home_code, away_code, home_label, away_label'),
+        supabase.from('matches').select('id, home_code, away_code, home_label, away_label, kickoff_at'),
         supabase.from('social_posts').select('*').order('created_at', { ascending: false }).limit(50),
       ])
       if (!active) return
@@ -83,7 +83,10 @@ export function useSocialPosts() {
     await supabase.from('social_posts').delete().eq('id', postId)
   }
 
-  const matchList: MatchLite[] = useMemo(() => Object.values(matches), [matches])
+  const matchList: MatchLite[] = useMemo(
+    () => Object.values(matches).sort(byKickoff),
+    [matches],
+  )
 
   return {
     hero: views[0] ?? null,

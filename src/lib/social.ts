@@ -24,6 +24,7 @@ export interface MatchLite {
   id: string
   home_code: string | null; away_code: string | null
   home_label: string | null; away_label: string | null
+  kickoff_at: string
 }
 export interface PostView extends SocialPostRow {
   author_name: string
@@ -131,6 +132,22 @@ export function flagEmoji(code: string | null): string {
   if (a < 0 || a > 25 || b < 0 || b > 25) return '🏳️'
   return String.fromCodePoint(0x1f1e6 + a, 0x1f1e6 + b)
 }
+
+// Match-picker option: kickoff date/time + team flags, or "Upcoming" when the
+// teams aren't decided yet (knockout slots with no codes).
+export function matchOption(m: MatchLite): string {
+  const when = new Date(m.kickoff_at).toLocaleString([], {
+    month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
+  })
+  const teams = m.home_code && m.away_code
+    ? `${flagEmoji(m.home_code)} ${flagEmoji(m.away_code)}`
+    : 'Upcoming'
+  return `${when} · ${teams}`
+}
+
+// Matches sorted by kickoff (earliest first) for the tag picker.
+export const byKickoff = (a: MatchLite, b: MatchLite): number =>
+  a.kickoff_at.localeCompare(b.kickoff_at)
 
 export function toView(
   row: SocialPostRow,

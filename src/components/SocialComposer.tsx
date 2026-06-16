@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import {
-  PALETTE, FONTS, SCALES, colorClass, fontClass, isLight, validBody, flagEmoji,
+  PALETTE, FONTS, SCALES, colorClass, fontClass, isLight, validBody, matchOption,
   type SocialColor, type SocialFont, type SocialScale, type MatchLite,
 } from '../lib/social'
 
@@ -91,7 +91,7 @@ export function SocialComposer({ matchList, onPost }: {
           <option value="">No match</option>
           {matchList.map(m => (
             <option key={m.id} value={m.id}>
-              {flagEmoji(m.home_code)} {flagEmoji(m.away_code)}
+              {matchOption(m)}
             </option>
           ))}
         </select>
