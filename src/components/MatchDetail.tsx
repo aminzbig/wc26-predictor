@@ -128,7 +128,7 @@ function PicksBoard({ rows, match }: { rows: PeoplePick[]; match: Match }) {
                 )
               )}
 
-              <Avatar url={r.avatar_url} code={r.flag_code} label={r.name} size="sm" />
+              <Avatar url={r.avatar_url} code={r.flag_code} label={r.name} size="md" />
 
               <div className="min-w-0 flex-1">
                 <div className="font-display text-[15px] uppercase truncate leading-none">{r.name}</div>

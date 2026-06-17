@@ -16,7 +16,7 @@ export function LeaderRow({ row, rank, isMe, idx = 0 }: { row: Row; rank: number
         ${top ? 'bg-ink text-yellow' : 'text-ink'}`}>
         {rank}
       </div>
-      <Avatar url={row.avatar_url} code={row.flag_code} label={row.name} size="sm" />
+      <Avatar url={row.avatar_url} code={row.flag_code} label={row.name} size="md" />
       <div className="flex-1 min-w-0">
         <div className="font-display text-[18px] uppercase leading-none truncate">
           {isMe ? `You · ${row.name}` : row.name}
