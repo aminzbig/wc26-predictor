@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Lock } from 'lucide-react'
 import type { Match, Prediction, Lineup, SquadPlayer } from '../lib/types'
@@ -50,6 +50,26 @@ function PeoplePredictions({ match }: { match: Match }) {
   return <PicksBoard rows={rows} match={match} />
 }
 
+// Live projected-points badge: outlined (provisional), and emits a one-shot halo
+// pulse whenever the projection changes — so a goal visibly ripples through the row.
+function HaloPoints({ value }: { value: number }) {
+  const prev = useRef(value)
+  const [pulse, setPulse] = useState(false)
+  useEffect(() => {
+    if (prev.current === value) return
+    prev.current = value
+    setPulse(true)
+    const t = setTimeout(() => setPulse(false), 900)
+    return () => clearTimeout(t)
+  }, [value])
+  return (
+    <div className={`flex-none grid place-items-center w-[50px] h-[40px] border-2 border-ink/50 bg-paper ${pulse ? 'halo-pulse' : ''}`}>
+      <div className="font-display text-[22px] leading-none text-ink/50">{value}</div>
+      <div className="mt-0.5 font-sans font-900 text-[6px] uppercase tracking-[0.2em] leading-none text-ink/50">proj</div>
+    </div>
+  )
+}
+
 // Presentational leaderboard — kept separate from the fetch so it can be rendered
 // in isolation. `rows` is expected pre-sorted by points desc, then name.
 function PicksBoard({ rows, match }: { rows: PeoplePick[]; match: Match }) {
@@ -95,7 +115,7 @@ function PicksBoard({ rows, match }: { rows: PeoplePick[]; match: Match }) {
                 layout: { type: 'spring', stiffness: 380, damping: 30 },
                 delay: Math.min(i * 0.04, 0.4), type: 'spring', stiffness: 320, damping: 26,
               }}
-              className={`flex items-center gap-2 px-1.5 py-1.5 border-t-2 border-ink/10 first:border-t-0 ${isTop ? 'bg-yellow border-t-yellow' : ''}`}
+              className={`flex items-center gap-2 px-1.5 py-1.5 border-t-2 border-ink/10 first:border-t-0 ${isTop ? 'bg-yellow border-t-yellow' : ''} ${live ? 'halo-live' : ''}`}
             >
               {/* Rank — leader wears the starburst, the rest a plain numeral */}
               {(scored || live) && (
@@ -125,11 +145,7 @@ function PicksBoard({ rows, match }: { rows: PeoplePick[]; match: Match }) {
                   <div className={`mt-0.5 font-sans font-900 text-[6px] uppercase tracking-[0.2em] leading-none ${pts > 0 ? (isTop ? 'text-yellow/70' : 'text-paper/60') : 'text-ink/30'}`}>pts</div>
                 </div>
               ) : live ? (
-                /* Provisional — outlined, not solid: "still moving, not final" */
-                <div className="flex-none grid place-items-center w-[50px] h-[40px] border-2 border-ink/50 bg-paper">
-                  <div className="font-display text-[22px] leading-none text-ink">{pts}</div>
-                  <div className="mt-0.5 font-sans font-900 text-[6px] uppercase tracking-[0.2em] leading-none text-ink/50">proj</div>
-                </div>
+                <HaloPoints value={pts} />
               ) : (
                 <div className="font-display text-[16px] leading-none">{r.home_pred}–{r.away_pred}</div>
               )}
