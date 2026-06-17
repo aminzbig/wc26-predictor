@@ -3,7 +3,7 @@ export type Stage = 'group' | 'r32' | 'r16' | 'qf' | 'sf' | 'third' | 'final'
 export interface Team { code: string; name: string }
 export interface Player {
   id: string; name: string; slug: string; flag_code: string | null
-  avatar_url: string | null; avatar_blend: number | null
+  avatar_url: string | null; avatar_blend: number | null; avatar_mode: string | null
   is_admin: boolean; legacy_points: number
 }
 export interface Match {

@@ -4,6 +4,17 @@ import { useAuth } from '../context/AuthContext'
 
 const SIZE = 512 // baked square; cropped to a circle by CSS everywhere it renders.
 
+// How the flag fuses with the face. `op` is the canvas globalCompositeOperation;
+// the intensity slider still scales it via globalAlpha.
+const MODES = [
+  { key: 'normal',   label: 'Normal',     op: 'source-over' as GlobalCompositeOperation },
+  { key: 'multiply', label: 'Multiply',   op: 'multiply'    as GlobalCompositeOperation },
+  { key: 'overlay',  label: 'Overlay',    op: 'overlay'     as GlobalCompositeOperation },
+  { key: 'soft',     label: 'Soft light', op: 'soft-light'  as GlobalCompositeOperation },
+]
+const modeOp = (key: string): GlobalCompositeOperation =>
+  (MODES.find(m => m.key === key) ?? MODES[0]).op
+
 // Resolve a flag's bundled SVG URL by reading what flag-icons CSS already paints.
 // Same-origin asset → drawing it to canvas does not taint it, so toBlob works.
 function flagUrl(code: string): string | null {
@@ -35,9 +46,10 @@ function drawCover(ctx: CanvasRenderingContext2D, img: CanvasImageSource, iw: nu
 
 type Status = 'idle' | 'live' | 'review' | 'saving'
 
-export function AvatarStudio({ flagCode, initialBlend }: {
+export function AvatarStudio({ flagCode, initialBlend, initialMode }: {
   flagCode: string | null
   initialBlend: number | null
+  initialMode: string | null
 }) {
   const { player, refreshPlayer } = useAuth()
   const videoRef = useRef<HTMLVideoElement>(null)
@@ -48,6 +60,7 @@ export function AvatarStudio({ flagCode, initialBlend }: {
 
   const [status, setStatus] = useState<Status>('idle')
   const [blend, setBlend] = useState<number>(initialBlend ?? 35)
+  const [mode, setMode] = useState<string>(initialMode ?? 'normal')
   const [msg, setMsg] = useState('')
 
   const stopCamera = useCallback(() => {
@@ -116,14 +129,16 @@ export function AvatarStudio({ flagCode, initialBlend }: {
     const flag = flagImgRef.current
     if (flag) {
       ctx.globalAlpha = blend / 100
+      ctx.globalCompositeOperation = modeOp(mode)
       drawCover(ctx, flag, flag.naturalWidth || 4, flag.naturalHeight || 3)
+      ctx.globalCompositeOperation = 'source-over'
       ctx.globalAlpha = 1
     }
   }
 
-  useEffect(() => { if (status === 'review') compose() // re-blend on slider move
+  useEffect(() => { if (status === 'review') compose() // re-blend on slider / mode change
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [blend, status])
+  }, [blend, mode, status])
 
   function retake() {
     photoRef.current = null
@@ -147,7 +162,7 @@ export function AvatarStudio({ flagCode, initialBlend }: {
 
     const { data: pub } = supabase.storage.from('avatars').getPublicUrl(`${dir}/avatar.jpg`)
     const url = `${pub.publicUrl}?v=${Date.now()}` // bust the CDN/browser cache on re-save
-    const { error } = await supabase.from('players').update({ avatar_url: url, avatar_blend: blend }).eq('id', player.id)
+    const { error } = await supabase.from('players').update({ avatar_url: url, avatar_blend: blend, avatar_mode: mode }).eq('id', player.id)
     if (error) { setMsg(error.message); setStatus('review'); return }
 
     await refreshPlayer()
@@ -173,14 +188,24 @@ export function AvatarStudio({ flagCode, initialBlend }: {
       </div>
 
       {status === 'review' && (
-        <label className="w-full max-w-[220px]">
-          <div className="flex justify-between font-sans font-900 text-[9px] uppercase tracking-widest text-ink/60 mb-1">
-            <span>Photo</span><span>Flag {blend}%</span>
+        <div className="w-full max-w-[240px] flex flex-col gap-3">
+          <label className="w-full">
+            <div className="flex justify-between font-sans font-900 text-[9px] uppercase tracking-widest text-ink/60 mb-1">
+              <span>Photo</span><span>Flag {blend}%</span>
+            </div>
+            <input type="range" min={0} max={100} value={blend}
+              onChange={e => setBlend(Number(e.target.value))}
+              className="w-full accent-ink" />
+          </label>
+          <div className="grid grid-cols-4 gap-1">
+            {MODES.map(m => (
+              <button key={m.key} type="button" onClick={() => setMode(m.key)}
+                className={`py-1 font-sans font-900 text-[8px] uppercase tracking-wide border-2 border-ink ${mode === m.key ? 'bg-ink text-paper' : 'text-ink'}`}>
+                {m.label}
+              </button>
+            ))}
           </div>
-          <input type="range" min={0} max={100} value={blend}
-            onChange={e => setBlend(Number(e.target.value))}
-            className="w-full accent-ink" />
-        </label>
+        </div>
       )}
 
       <div className="flex gap-2">

@@ -85,7 +85,7 @@ export function Me() {
             {flagMsg && <p className="font-sans font-700 text-[11px] uppercase tracking-wide text-ink/60 mt-2">{flagMsg}</p>}
           </>
         ) : (
-          <AvatarStudio flagCode={flag} initialBlend={player?.avatar_blend ?? null} />
+          <AvatarStudio flagCode={flag} initialBlend={player?.avatar_blend ?? null} initialMode={player?.avatar_mode ?? null} />
         )}
       </div>
 

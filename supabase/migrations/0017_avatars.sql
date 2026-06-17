@@ -2,9 +2,11 @@
 -- Users capture a photo and blend their flag over it; the baked composite is
 -- stored in the `avatars` bucket and its public URL on players.avatar_url.
 
--- 1. Player columns: baked composite URL + last blend slider value (0-100).
+-- 1. Player columns: baked composite URL + last blend slider value (0-100)
+--    + last blend mode (normal/multiply/overlay/soft), so the editor can restore.
 alter table players add column if not exists avatar_url text;
 alter table players add column if not exists avatar_blend smallint;
+alter table players add column if not exists avatar_mode text;
 
 -- 2. Leaderboard view must surface avatar_url so leaderboard rows render the avatar.
 create or replace view leaderboard as
