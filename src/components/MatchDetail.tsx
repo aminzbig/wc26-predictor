@@ -132,8 +132,9 @@ function PicksBoard({ rows, match }: { rows: PeoplePick[]; match: Match }) {
                 <div className="font-display text-[15px] uppercase truncate leading-none">{r.name}</div>
                 {(scored || live) && r.tier && (
                   <div className="mt-1 text-[9px] font-sans font-900 uppercase tracking-widest leading-none">
-                    <span className="opacity-60">{r.home_pred}–{r.away_pred}</span>
-                    <span className={`ml-1.5 ${isTop ? (r.tier === 'miss' ? 'text-ink/40' : 'text-ink') : TIER[r.tier].cls}`}>· {TIER[r.tier].label}</span>
+                    {/* live shows the predicted score beside the square instead, so omit it here */}
+                    {scored && <span className="opacity-60">{r.home_pred}–{r.away_pred}</span>}
+                    <span className={`${scored ? 'ml-1.5' : ''} ${isTop ? (r.tier === 'miss' ? 'text-ink/40' : 'text-ink') : TIER[r.tier].cls}`}>{scored ? '· ' : ''}{TIER[r.tier].label}</span>
                   </div>
                 )}
               </div>
@@ -145,7 +146,14 @@ function PicksBoard({ rows, match }: { rows: PeoplePick[]; match: Match }) {
                   <div className={`mt-0.5 font-sans font-900 text-[6px] uppercase tracking-[0.2em] leading-none ${pts > 0 ? (isTop ? 'text-yellow/70' : 'text-paper/60') : 'text-ink/30'}`}>pts</div>
                 </div>
               ) : live ? (
-                <HaloPoints value={pts} />
+                /* predicted score sits to the LEFT of the projected square for readability */
+                <div className="flex items-center gap-2 flex-none">
+                  <div className="grid place-items-center h-[40px]">
+                    <div className="font-display text-[18px] leading-none text-ink/70">{r.home_pred}–{r.away_pred}</div>
+                    <div className="mt-0.5 font-sans font-900 text-[6px] uppercase tracking-[0.2em] leading-none text-ink/40">pick</div>
+                  </div>
+                  <HaloPoints value={pts} />
+                </div>
               ) : (
                 <div className="font-display text-[16px] leading-none">{r.home_pred}–{r.away_pred}</div>
               )}
