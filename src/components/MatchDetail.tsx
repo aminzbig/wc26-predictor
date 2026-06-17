@@ -6,8 +6,9 @@ import { matchState } from '../lib/matchState'
 import { supabase } from '../lib/supabase'
 import { rankLivePicks } from '../lib/livePicks'
 import { Flag } from './Flag'
+import { Avatar } from './Avatar'
 
-type PeoplePick = { id: string; name: string; flag_code: string | null; home_pred: number; away_pred: number; points: number | null }
+type PeoplePick = { id: string; name: string; flag_code: string | null; avatar_url: string | null; home_pred: number; away_pred: number; points: number | null }
 
 // How close a pick landed vs. the final score — mirrors the tiers in lib/scoring.ts.
 type Tier = 'exact' | 'diff' | 'outcome' | 'miss'
@@ -33,12 +34,13 @@ function PeoplePredictions({ match }: { match: Match }) {
   useEffect(() => {
     let active = true
     supabase.from('predictions')
-      .select('id,home_pred,away_pred,points_awarded, players(name,flag_code)')
+      .select('id,home_pred,away_pred,points_awarded, players(name,flag_code,avatar_url)')
       .eq('match_id', match.id)
       .then(({ data }) => {
         if (!active) return
         const list: PeoplePick[] = (data ?? []).map((r: any) => ({
           id: r.id, name: r.players?.name ?? '?', flag_code: r.players?.flag_code ?? null,
+          avatar_url: r.players?.avatar_url ?? null,
           home_pred: r.home_pred, away_pred: r.away_pred, points: r.points_awarded,
         }))
         list.sort((a, b) => (b.points ?? -1) - (a.points ?? -1) || a.name.localeCompare(b.name))
@@ -126,7 +128,7 @@ function PicksBoard({ rows, match }: { rows: PeoplePick[]; match: Match }) {
                 )
               )}
 
-              <Flag code={r.flag_code} label={r.name} size="sm" />
+              <Avatar url={r.avatar_url} code={r.flag_code} label={r.name} size="sm" />
 
               <div className="min-w-0 flex-1">
                 <div className="font-display text-[15px] uppercase truncate leading-none">{r.name}</div>

@@ -4,6 +4,8 @@ import { logout } from '../lib/auth'
 import { useAuth } from '../context/AuthContext'
 import { useLeaderboard } from '../hooks/useLeaderboard'
 import { Flag } from '../components/Flag'
+import { Avatar } from '../components/Avatar'
+import { AvatarStudio } from '../components/AvatarStudio'
 import type { Team } from '../lib/types'
 
 export function Me() {
@@ -15,6 +17,7 @@ export function Me() {
   const [teams, setTeams] = useState<Team[]>([])
   const [flag, setFlag] = useState<string | null>(player?.flag_code ?? null)
   const [flagMsg, setFlagMsg] = useState('')
+  const [tab, setTab] = useState<'flag' | 'photo'>('flag')
 
   useEffect(() => {
     supabase.from('teams').select('code,name').order('name').then(({ data }) => setTeams((data ?? []) as Team[]))
@@ -43,7 +46,7 @@ export function Me() {
       {/* Stats panel */}
       <div className="border-[3px] border-ink bg-paper p-4 mb-4">
         <div className="flex items-center gap-3 mb-3">
-          <Flag code={flag} label={player?.name} size="sm" />
+          <Avatar url={player?.avatar_url} code={flag} label={player?.name} size="md" />
           <div className="font-display text-[24px] uppercase">{player?.name}</div>
         </div>
         <div className="grid grid-cols-3 gap-0 border-[3px] border-ink">
@@ -55,20 +58,35 @@ export function Me() {
         </div>
       </div>
 
-      {/* Flag picker panel */}
+      {/* Flag / Photo panel */}
       <div className="border-[3px] border-ink bg-paper p-4 mb-4">
-        <div className="font-display text-[14px] uppercase tracking-wide mb-1">Your flag</div>
-        <div className="font-sans font-700 text-[10px] uppercase tracking-wide text-ink/60 mb-3">Tap to pick · tap again to clear</div>
-        <div className="grid grid-cols-5 gap-2 max-h-[230px] overflow-y-auto pr-1">
-          {teams.map(t => (
-            <button key={t.code} type="button" onClick={() => pickFlag(t.code)}
-              title={t.name}
-              className={`flex items-center justify-center p-1 border-[3px] ${flag === t.code ? 'border-ink bg-ink/10' : 'border-transparent'}`}>
-              <Flag code={t.code} label={t.name} size="sm" />
+        <div className="font-display text-[14px] uppercase tracking-wide mb-3">Your flag</div>
+        <div className="flex border-[3px] border-ink mb-3">
+          {(['flag', 'photo'] as const).map(t => (
+            <button key={t} type="button" onClick={() => setTab(t)}
+              className={`flex-1 py-1.5 font-display text-[13px] uppercase tracking-wide ${tab === t ? 'bg-ink text-paper' : 'text-ink'}`}>
+              {t === 'flag' ? 'Flag' : 'Photo'}
             </button>
           ))}
         </div>
-        {flagMsg && <p className="font-sans font-700 text-[11px] uppercase tracking-wide text-ink/60 mt-2">{flagMsg}</p>}
+
+        {tab === 'flag' ? (
+          <>
+            <div className="font-sans font-700 text-[10px] uppercase tracking-wide text-ink/60 mb-3">Tap to pick · tap again to clear</div>
+            <div className="grid grid-cols-5 gap-2 max-h-[230px] overflow-y-auto pr-1">
+              {teams.map(t => (
+                <button key={t.code} type="button" onClick={() => pickFlag(t.code)}
+                  title={t.name}
+                  className={`flex items-center justify-center p-1 border-[3px] ${flag === t.code ? 'border-ink bg-ink/10' : 'border-transparent'}`}>
+                  <Flag code={t.code} label={t.name} size="sm" />
+                </button>
+              ))}
+            </div>
+            {flagMsg && <p className="font-sans font-700 text-[11px] uppercase tracking-wide text-ink/60 mt-2">{flagMsg}</p>}
+          </>
+        ) : (
+          <AvatarStudio flagCode={flag} initialBlend={player?.avatar_blend ?? null} />
+        )}
       </div>
 
       {/* Change PIN panel */}

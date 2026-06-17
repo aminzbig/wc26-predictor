@@ -26,13 +26,13 @@ export function useSocialPosts() {
     let active = true
     async function load() {
       const [p, m, posts] = await Promise.all([
-        supabase.from('players').select('id, name, flag_code'),
+        supabase.from('players').select('id, name, flag_code, avatar_url'),
         supabase.from('matches').select('id, home_code, away_code, home_label, away_label, kickoff_at'),
         supabase.from('social_posts').select('*').order('created_at', { ascending: false }).limit(50),
       ])
       if (!active) return
       const pmap: Record<string, PlayerLite> = {}
-      for (const r of p.data ?? []) pmap[r.id] = { name: r.name, flag_code: r.flag_code }
+      for (const r of p.data ?? []) pmap[r.id] = { name: r.name, flag_code: r.flag_code, avatar_url: r.avatar_url }
       const mmap: Record<string, MatchLite> = {}
       for (const r of m.data ?? []) mmap[r.id] = r as MatchLite
       setPlayers(pmap)

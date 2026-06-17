@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { X } from 'lucide-react'
-import { Flag } from './Flag'
+import { Avatar } from './Avatar'
 import { MatchFlags } from './MatchFlags'
 import { ReactionBar } from './ReactionBar'
 import { REACTIONS, colorClass, fontClass, isLight, relativeTime, type PostView, type Reaction } from '../lib/social'
@@ -60,7 +60,7 @@ export function SocialHero({ view, canDelete, tapped, onReact, onDelete }: {
 
       <div className={`${colorClass(view.color)} border-[4px] border-ink rounded-[26px] p-5 shadow-[6px_6px_0_#141210]`}>
         <div className="flex items-center gap-2.5">
-          <Flag code={view.author_flag} label={view.author_name} size="md" />
+          <Avatar url={view.author_avatar} code={view.author_flag} label={view.author_name} size="md" />
           <span className="font-display uppercase text-[18px] tracking-wide">{view.author_name}</span>
           <span className={`ml-auto text-[12px] font-900 ${light ? 'opacity-80' : 'opacity-70'}`}>
             {relativeTime(view.created_at)}

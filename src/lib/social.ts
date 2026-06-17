@@ -19,7 +19,7 @@ export interface SocialPostRow {
   created_at: string
 }
 
-export interface PlayerLite { name: string; flag_code: string | null }
+export interface PlayerLite { name: string; flag_code: string | null; avatar_url: string | null }
 export interface MatchLite {
   id: string
   home_code: string | null; away_code: string | null
@@ -29,6 +29,7 @@ export interface MatchLite {
 export interface PostView extends SocialPostRow {
   author_name: string
   author_flag: string | null
+  author_avatar: string | null
   match_label: string | null
   match_home: string | null
   match_away: string | null
@@ -160,6 +161,7 @@ export function toView(
     ...row,
     author_name: a?.name ?? 'Someone',
     author_flag: a?.flag_code ?? null,
+    author_avatar: a?.avatar_url ?? null,
     match_label: m ? matchLabel(m) : null,
     match_home: m?.home_code ?? null,
     match_away: m?.away_code ?? null,

@@ -29,7 +29,9 @@ select cron.schedule(
       'Authorization', 'Bearer ' || (select decrypted_secret from vault.decrypted_secrets where name = 'cron_secret')
     ),
     body := '{}'::jsonb,
-    timeout_milliseconds := 25000
+    -- The function self-loops at ~15s while a match is live (LIVE_POLL_SECONDS),
+    -- staying under a 50s budget, so allow pg_net to wait out the whole pass.
+    timeout_milliseconds := 55000
   );
   $cron$
 );

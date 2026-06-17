@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { Flag } from './Flag'
+import { Avatar } from './Avatar'
 import type { LeaderRow as Row } from '../lib/types'
 
 export function LeaderRow({ row, rank, isMe, idx = 0 }: { row: Row; rank: number; isMe: boolean; idx?: number }) {
@@ -16,7 +16,7 @@ export function LeaderRow({ row, rank, isMe, idx = 0 }: { row: Row; rank: number
         ${top ? 'bg-ink text-yellow' : 'text-ink'}`}>
         {rank}
       </div>
-      <Flag code={row.flag_code} size="sm" />
+      <Avatar url={row.avatar_url} code={row.flag_code} label={row.name} size="sm" />
       <div className="flex-1 min-w-0">
         <div className="font-display text-[18px] uppercase leading-none truncate">
           {isMe ? `You · ${row.name}` : row.name}
