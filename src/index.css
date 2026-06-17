@@ -37,18 +37,10 @@ body {
   z-index: 30;
   outline: none;
 }
-/* glossy highlight */
-.sticker::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  clip-path: inherit;
-  background: linear-gradient(135deg, rgba(255,255,255,.55), rgba(255,255,255,0) 45%);
-  pointer-events: none;
-}
-/* Bonus rainbow: the pinball extra-ball ball treatment — a uniform hsl(hue, 90%, 70%)
-   colour sweeping the whole hue wheel (pinball cycles ~1.5 turns/s; calmer here for a
-   persistent badge). hue-rotate keeps saturation/lightness while cycling the hue. */
+/* Bonus rainbow: the pinball extra-ball ball treatment — a single FLAT solid
+   colour (no gradient) that sweeps the whole hue wheel at hsl(hue, 90%, 70%)
+   (pinball cycles ~1.5 turns/s; calmer here for a persistent badge). hue-rotate
+   keeps saturation/lightness while cycling the hue. */
 .sticker--holo {
   background: hsl(0, 90%, 70%);
   animation: adminHolo 2.5s linear infinite;
@@ -57,15 +49,15 @@ body {
   from { filter: drop-shadow(1px 2px 3px rgba(20,18,16,.55)) hue-rotate(0deg); }
   to   { filter: drop-shadow(1px 2px 3px rgba(20,18,16,.55)) hue-rotate(360deg); }
 }
+/* Penalty: a single flat solid red. */
 .sticker--bad {
-  background: radial-gradient(circle at 35% 30%, #ff6a6a, #d11a1a 70%);
+  background: #e22a1c;
 }
 @media (prefers-reduced-motion: reduce) {
-  /* no cycling — show a static rainbow so it still reads as the special bonus sticker */
+  /* no cycling — rest on a flat solid gold (classic reward star), distinct from the red penalty. */
   .sticker--holo {
     animation: none;
-    background: linear-gradient(135deg,
-      hsl(0,90%,70%), hsl(55,90%,70%), hsl(120,90%,70%), hsl(190,90%,70%), hsl(265,90%,70%), hsl(325,90%,70%));
+    background: hsl(45, 95%, 58%);
   }
 }
 
