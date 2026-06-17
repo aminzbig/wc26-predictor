@@ -24,7 +24,7 @@ body {
   transform: rotate(-6deg);
   color: #fff;
   text-shadow: 0 1px 1px rgba(0,0,0,.4);
-  filter: drop-shadow(1px 2px 3px rgba(20,18,16,.55));
+  filter: drop-shadow(-4px 3px 4px rgba(20,18,16,.78));
   transition: transform .14s cubic-bezier(.34, 1.56, .64, 1);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
@@ -46,8 +46,8 @@ body {
   animation: adminHolo 2.5s linear infinite;
 }
 @keyframes adminHolo {
-  from { filter: drop-shadow(1px 2px 3px rgba(20,18,16,.55)) hue-rotate(0deg); }
-  to   { filter: drop-shadow(1px 2px 3px rgba(20,18,16,.55)) hue-rotate(360deg); }
+  from { filter: drop-shadow(-4px 3px 4px rgba(20,18,16,.78)) hue-rotate(0deg); }
+  to   { filter: drop-shadow(-4px 3px 4px rgba(20,18,16,.78)) hue-rotate(360deg); }
 }
 /* Penalty: a single flat solid red. */
 .sticker--bad {
