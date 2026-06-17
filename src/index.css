@@ -30,7 +30,7 @@ input[type='number'] { -moz-appearance: textfield; appearance: textfield; paddin
 
 @keyframes halo-flash {
   0%   { box-shadow: 0 0 0 0 rgba(20, 18, 16, 0); }
-  18%  { box-shadow: 0 0 16px 3px rgba(20, 18, 16, .27); }
+  18%  { box-shadow: 0 0 16px 3px rgba(20, 18, 16, .14); }
   100% { box-shadow: 0 0 0 0 rgba(20, 18, 16, 0); }
 }
 .halo-pulse { animation: halo-flash .9s ease-out; }
