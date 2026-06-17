@@ -4,7 +4,7 @@ export interface Team { code: string; name: string }
 export interface Player {
   id: string; name: string; slug: string; flag_code: string | null
   avatar_url: string | null; avatar_blend: number | null; avatar_mode: string | null
-  is_admin: boolean; legacy_points: number; admin_units: number
+  is_admin: boolean; legacy_points: number
 }
 export interface Match {
   id: string; match_no: number | null; stage: Stage; group_label: string | null
@@ -31,5 +31,5 @@ export interface Prediction {
 }
 export interface LeaderRow {
   id: string; name: string; flag_code: string | null; avatar_url: string | null
-  total: number; exact_hits: number; diff_hits: number; admin_units: number
+  total: number; exact_hits: number; diff_hits: number; admin_deltas: number[] | null
 }
