@@ -24,7 +24,7 @@ input[type='number'] { -moz-appearance: textfield; appearance: textfield; paddin
 /* live projected picks — provisional "not finalized" halo (grey, matches ink) */
 @keyframes halo-breathe {
   0%, 100% { box-shadow: 0 0 0 0 rgba(20, 18, 16, 0); }
-  50%      { box-shadow: 0 0 10px 1px rgba(20, 18, 16, .30); }
+  50%      { box-shadow: 0 0 10px 1px rgba(20, 18, 16, .15); }
 }
 .halo-live { animation: halo-breathe 2.6s ease-in-out infinite; }
 
