@@ -1,12 +1,13 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Lock } from 'lucide-react'
 import type { Match, Prediction, Lineup, SquadPlayer } from '../lib/types'
 import { matchState } from '../lib/matchState'
 import { supabase } from '../lib/supabase'
+import { rankLivePicks } from '../lib/livePicks'
 import { Flag } from './Flag'
 
-type PeoplePick = { name: string; flag_code: string | null; home_pred: number; away_pred: number; points: number | null }
+type PeoplePick = { id: string; name: string; flag_code: string | null; home_pred: number; away_pred: number; points: number | null }
 
 // How close a pick landed vs. the final score — mirrors the tiers in lib/scoring.ts.
 type Tier = 'exact' | 'diff' | 'outcome' | 'miss'
@@ -32,12 +33,12 @@ function PeoplePredictions({ match }: { match: Match }) {
   useEffect(() => {
     let active = true
     supabase.from('predictions')
-      .select('home_pred,away_pred,points_awarded, players(name,flag_code)')
+      .select('id,home_pred,away_pred,points_awarded, players(name,flag_code)')
       .eq('match_id', match.id)
       .then(({ data }) => {
         if (!active) return
         const list: PeoplePick[] = (data ?? []).map((r: any) => ({
-          name: r.players?.name ?? '?', flag_code: r.players?.flag_code ?? null,
+          id: r.id, name: r.players?.name ?? '?', flag_code: r.players?.flag_code ?? null,
           home_pred: r.home_pred, away_pred: r.away_pred, points: r.points_awarded,
         }))
         list.sort((a, b) => (b.points ?? -1) - (a.points ?? -1) || a.name.localeCompare(b.name))
@@ -49,20 +50,46 @@ function PeoplePredictions({ match }: { match: Match }) {
   return <PicksBoard rows={rows} match={match} />
 }
 
+// Live projected-points badge: outlined (provisional), and emits a one-shot halo
+// pulse whenever the projection changes — so a goal visibly ripples through the row.
+function HaloPoints({ value }: { value: number }) {
+  const prev = useRef(value)
+  const [pulse, setPulse] = useState(false)
+  useEffect(() => {
+    if (prev.current === value) return
+    prev.current = value
+    setPulse(true)
+    const t = setTimeout(() => setPulse(false), 900)
+    return () => clearTimeout(t)
+  }, [value])
+  return (
+    <div className={`flex-none grid place-items-center w-[50px] h-[40px] border-2 border-ink/50 bg-paper ${pulse ? 'halo-pulse' : ''}`}>
+      <div className="font-display text-[22px] leading-none text-ink/50">{value}</div>
+      <div className="mt-0.5 font-sans font-900 text-[6px] uppercase tracking-[0.2em] leading-none text-ink/50">proj</div>
+    </div>
+  )
+}
+
 // Presentational leaderboard — kept separate from the fetch so it can be rendered
 // in isolation. `rows` is expected pre-sorted by points desc, then name.
 function PicksBoard({ rows, match }: { rows: PeoplePick[]; match: Match }) {
   const scored = match.status === 'finished' && match.home_score != null && match.away_score != null
+  const live = !scored && match.live_status != null && match.live_home != null && match.live_away != null
   const hs = match.home_score ?? 0, as = match.away_score ?? 0
+  const lh = match.live_home ?? 0, la = match.live_away ?? 0
   const topPoints = scored ? Math.max(0, ...rows.map(r => r.points ?? 0)) : 0
 
-  // Dense competition ranking — equal scores share a place, next distinct score skips
-  // ahead (1, 2, 3, 3, 5…). rank = 1 + how many picks scored strictly more.
-  const ranked = rows.map((r) => {
-    const pts = r.points ?? 0
-    const rank = rows.filter(x => (x.points ?? 0) > pts).length + 1
-    return { ...r, rank, tier: scored ? resultTier(r.home_pred, r.away_pred, hs, as) : null }
-  })
+  // LIVE: rank by projected points from the current live score.
+  // FINISHED / pre-kickoff: existing behavior (rank by awarded points, or none).
+  const ranked = live
+    ? rankLivePicks(rows, { home: lh, away: la }, match.multiplier ?? 1).map(r => ({
+        ...r, points: r.proj, tier: resultTier(r.home_pred, r.away_pred, lh, la),
+      }))
+    : rows.map((r) => {
+        const pts = r.points ?? 0
+        const rank = rows.filter(x => (x.points ?? 0) > pts).length + 1
+        return { ...r, rank, tier: scored ? resultTier(r.home_pred, r.away_pred, hs, as) : null }
+      })
 
   return (
     <div className="mt-4 border-[3px] border-ink bg-paper text-ink">
@@ -70,7 +97,7 @@ function PicksBoard({ rows, match }: { rows: PeoplePick[]; match: Match }) {
       <div className="flex items-stretch justify-between bg-ink text-paper">
         <div className="font-display text-[18px] uppercase tracking-wide leading-none px-2.5 py-2">Everyone's picks</div>
         <div className="self-center px-2.5 font-sans font-900 text-[10px] uppercase tracking-widest text-yellow">
-          {scored ? `Final · ${rows.length}` : `Locked · ${rows.length}`}
+          {scored ? `Final · ${rows.length}` : live ? `Live · ${match.live_minute ?? 0}′ · projected` : `Locked · ${rows.length}`}
         </div>
       </div>
 
@@ -80,15 +107,19 @@ function PicksBoard({ rows, match }: { rows: PeoplePick[]; match: Match }) {
           const isTop = scored && pts > 0 && pts === topPoints
           return (
             <motion.div
-              key={i}
+              key={r.id}
+              layout
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: Math.min(i * 0.04, 0.4), type: 'spring', stiffness: 320, damping: 26 }}
-              className={`flex items-center gap-2 px-1.5 py-1.5 border-t-2 border-ink/10 first:border-t-0 ${isTop ? 'bg-yellow border-t-yellow' : ''}`}
+              transition={{
+                layout: { type: 'spring', stiffness: 380, damping: 30 },
+                delay: Math.min(i * 0.04, 0.4), type: 'spring', stiffness: 320, damping: 26,
+              }}
+              className={`flex items-center gap-2 px-1.5 py-1.5 border-t-2 border-ink/10 first:border-t-0 ${isTop ? 'bg-yellow border-t-yellow' : ''} ${live ? 'halo-live' : ''}`}
             >
               {/* Rank — leader wears the starburst, the rest a plain numeral */}
-              {scored && (
-                isTop ? (
+              {(scored || live) && (
+                (scored && isTop) ? (
                   <div className="star-badge flex-none w-[32px] h-[32px] grid place-items-center bg-ink text-yellow font-display text-[15px] leading-none">{r.rank}</div>
                 ) : (
                   <div className="flex-none w-[32px] text-center font-display text-[22px] leading-none text-ink/55">{r.rank}</div>
@@ -99,7 +130,7 @@ function PicksBoard({ rows, match }: { rows: PeoplePick[]; match: Match }) {
 
               <div className="min-w-0 flex-1">
                 <div className="font-display text-[15px] uppercase truncate leading-none">{r.name}</div>
-                {scored && r.tier && (
+                {(scored || live) && r.tier && (
                   <div className="mt-1 text-[9px] font-sans font-900 uppercase tracking-widest leading-none">
                     <span className="opacity-60">{r.home_pred}–{r.away_pred}</span>
                     <span className={`ml-1.5 ${isTop ? (r.tier === 'miss' ? 'text-ink/40' : 'text-ink') : TIER[r.tier].cls}`}>· {TIER[r.tier].label}</span>
@@ -113,6 +144,8 @@ function PicksBoard({ rows, match }: { rows: PeoplePick[]; match: Match }) {
                   <div className={`font-display text-[22px] leading-none ${pts > 0 ? (isTop ? 'text-yellow' : 'text-paper') : 'text-ink/40'}`}>{pts}</div>
                   <div className={`mt-0.5 font-sans font-900 text-[6px] uppercase tracking-[0.2em] leading-none ${pts > 0 ? (isTop ? 'text-yellow/70' : 'text-paper/60') : 'text-ink/30'}`}>pts</div>
                 </div>
+              ) : live ? (
+                <HaloPoints value={pts} />
               ) : (
                 <div className="font-display text-[16px] leading-none">{r.home_pred}–{r.away_pred}</div>
               )}
