@@ -1,9 +1,11 @@
 import { motion } from 'framer-motion'
 import { Avatar } from './Avatar'
 import type { LeaderRow as Row } from '../lib/types'
+import { adminBadge } from '../lib/adminBadge'
 
 export function LeaderRow({ row, rank, isMe, idx = 0 }: { row: Row; rank: number; isMe: boolean; idx?: number }) {
   const top = rank <= 3
+  const badge = adminBadge(row.admin_units)
   return (
     <motion.div
       layout
@@ -25,6 +27,12 @@ export function LeaderRow({ row, rank, isMe, idx = 0 }: { row: Row; rank: number
           {row.exact_hits} exact · {row.diff_hits} diff
         </small>
       </div>
+      {badge && (
+        <span
+          className={`star-badge sticker sticker--${badge.variant} flex-none w-[58px] h-[58px] font-display text-[10px] leading-none text-center px-1`}>
+          {badge.label}
+        </span>
+      )}
       <div className="font-display text-[22px] text-ink text-right flex-none">{row.total}</div>
     </motion.div>
   )
