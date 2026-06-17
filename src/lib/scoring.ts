@@ -21,3 +21,14 @@ export function basePoints(p: Pred, r: Result, pts: FifaPoints = FIFA_POINTS, ri
     + (p.hp === r.hs && p.ap === r.as ? pts.scoreBonus : 0)
     + (risky && outcomeHit && sign(r.hs - r.as) !== 0 ? pts.risky : 0)
 }
+
+// Live projection: what a pick would score if the match ended at result `r` right now.
+// risky is intentionally omitted — it depends on the whole field's prediction distribution, so it's computed
+// server-side at Full-Time. Multiplied and rounded to match the final figure.
+export function projectedPoints(
+  p: { hp: number; ap: number },
+  r: { hs: number; as: number },
+  multiplier = 1,
+): number {
+  return Math.round(basePoints(p, r) * multiplier)
+}

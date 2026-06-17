@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { basePoints } from './scoring'
+import { basePoints, projectedPoints } from './scoring'
 
 // FIFA additive model: outcome 10, goalsHome 5, goalsAway 5, goalDiff 5, scoreBonus 5, risky 10.
 describe('basePoints (FIFA additive)', () => {
@@ -27,5 +27,21 @@ describe('basePoints (FIFA additive)', () => {
   })
   test('risky bonus does NOT apply to a correct draw', () => {
     expect(basePoints({ hp: 1, ap: 1 }, { hs: 0, as: 0 }, undefined, true)).toBe(15)
+  })
+})
+
+describe('projectedPoints (live projection)', () => {
+  test('exact live score = basePoints, multiplier 1', () => {
+    expect(projectedPoints({ hp: 2, ap: 1 }, { hs: 2, as: 1 })).toBe(30)
+  })
+  test('applies the match multiplier', () => {
+    expect(projectedPoints({ hp: 2, ap: 1 }, { hs: 2, as: 1 }, 2)).toBe(60)
+  })
+  test('never adds the risky bonus (server-only)', () => {
+    // pred 1-0 on live 1-0: exact win = 30. With risky it would be 40 — must stay 30.
+    expect(projectedPoints({ hp: 1, ap: 0 }, { hs: 1, as: 0 })).toBe(30)
+  })
+  test('missed pick projects 0', () => {
+    expect(projectedPoints({ hp: 2, ap: 1 }, { hs: 0, as: 3 })).toBe(0)
   })
 })
