@@ -57,6 +57,13 @@ export function AvatarStudio({ flagCode, initialBlend }: {
 
   useEffect(() => () => stopCamera(), [stopCamera]) // stop on unmount
 
+  // Auto-start the camera the moment the Photo tab opens (mount), so the user
+  // doesn't have to tap "Open camera". Skipped if no flag is picked yet.
+  useEffect(() => {
+    if (flagCode && !streamRef.current && status === 'idle') openCamera()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   // Load the flag SVG whenever the selected flag changes.
   useEffect(() => {
     let active = true
