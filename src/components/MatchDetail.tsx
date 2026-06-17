@@ -149,7 +149,7 @@ function PicksBoard({ rows, match }: { rows: PeoplePick[]; match: Match }) {
                 /* predicted score sits to the LEFT of the projected square for readability */
                 <div className="flex items-center gap-2 flex-none">
                   <div className="grid place-items-center h-[40px]">
-                    <div className="font-display text-[18px] leading-none text-ink/70">{r.home_pred}–{r.away_pred}</div>
+                    <div className="font-display text-[18px] leading-none text-ink">{r.home_pred}–{r.away_pred}</div>
                     <div className="mt-0.5 font-sans font-900 text-[6px] uppercase tracking-[0.2em] leading-none text-ink/40">pick</div>
                   </div>
                   <HaloPoints value={pts} />
