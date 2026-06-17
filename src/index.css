@@ -16,6 +16,59 @@ body {
   clip-path: polygon(50% 0%,61% 18%,82% 12%,79% 34%,98% 45%,82% 58%,90% 80%,66% 76%,55% 98%,44% 78%,20% 86%,24% 62%,4% 52%,22% 38%,14% 16%,38% 20%);
 }
 
+/* admin-points reward sticker (sits on a star-badge shape) */
+.sticker {
+  position: relative;
+  display: grid;
+  place-items: center;
+  transform: rotate(-6deg);
+  color: #fff;
+  text-shadow: 0 1px 1px rgba(0,0,0,.4);
+  filter: drop-shadow(1px 2px 3px rgba(20,18,16,.55));
+  transition: transform .14s cubic-bezier(.34, 1.56, .64, 1);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+/* press/hold (or hover/focus) pops the sticker up and enlarges it, like an iOS keyboard key */
+.sticker:hover,
+.sticker:focus-visible,
+.sticker:active {
+  transform: translateY(-16px) scale(1.55) rotate(0deg);
+  z-index: 30;
+  outline: none;
+}
+/* glossy highlight */
+.sticker::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  clip-path: inherit;
+  background: linear-gradient(135deg, rgba(255,255,255,.55), rgba(255,255,255,0) 45%);
+  pointer-events: none;
+}
+/* Bonus rainbow: the pinball extra-ball ball treatment — a uniform hsl(hue, 90%, 70%)
+   colour sweeping the whole hue wheel (pinball cycles ~1.5 turns/s; calmer here for a
+   persistent badge). hue-rotate keeps saturation/lightness while cycling the hue. */
+.sticker--holo {
+  background: hsl(0, 90%, 70%);
+  animation: adminHolo 2.5s linear infinite;
+}
+@keyframes adminHolo {
+  from { filter: drop-shadow(1px 2px 3px rgba(20,18,16,.55)) hue-rotate(0deg); }
+  to   { filter: drop-shadow(1px 2px 3px rgba(20,18,16,.55)) hue-rotate(360deg); }
+}
+.sticker--bad {
+  background: radial-gradient(circle at 35% 30%, #ff6a6a, #d11a1a 70%);
+}
+@media (prefers-reduced-motion: reduce) {
+  /* no cycling — show a static rainbow so it still reads as the special bonus sticker */
+  .sticker--holo {
+    animation: none;
+    background: linear-gradient(135deg,
+      hsl(0,90%,70%), hsl(55,90%,70%), hsl(120,90%,70%), hsl(190,90%,70%), hsl(265,90%,70%), hsl(325,90%,70%));
+  }
+}
+
 /* score number inputs: hide spin buttons so the digit sits dead-center */
 input[type='number']::-webkit-inner-spin-button,
 input[type='number']::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }

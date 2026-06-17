@@ -10,6 +10,7 @@ import { Me } from './screens/Me'
 import { AdminResults } from './screens/admin/AdminResults'
 import { AdminFixtures } from './screens/admin/AdminFixtures'
 import { AdminPlayers } from './screens/admin/AdminPlayers'
+import { AdminPoints } from './screens/admin/AdminPoints'
 import { AdminSettings } from './screens/admin/AdminSettings'
 
 const Shell = ({ children }: { children: React.ReactNode }) =>
@@ -33,6 +34,7 @@ export default function App() {
         <Route path="/admin" element={<Protected admin><Shell><AdminResults /></Shell></Protected>} />
         <Route path="/admin/fixtures" element={<Protected admin><Shell><AdminFixtures /></Shell></Protected>} />
         <Route path="/admin/players" element={<Protected admin><Shell><AdminPlayers /></Shell></Protected>} />
+        <Route path="/admin/points" element={<Protected admin><Shell><AdminPoints /></Shell></Protected>} />
         <Route path="/admin/settings" element={<Protected admin><Shell><AdminSettings /></Shell></Protected>} />
         <Route path="*" element={<Navigate to="/matches" replace />} />
       </Routes>

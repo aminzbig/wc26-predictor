@@ -31,5 +31,5 @@ export interface Prediction {
 }
 export interface LeaderRow {
   id: string; name: string; flag_code: string | null; avatar_url: string | null
-  total: number; exact_hits: number; diff_hits: number
+  total: number; exact_hits: number; diff_hits: number; admin_deltas: number[] | null
 }
