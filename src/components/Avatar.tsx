@@ -16,7 +16,7 @@ export function Avatar({ url, code, label, size = 'md', px }: {
 }) {
   const dim = px ? '' : DIM[size]
   const style = px ? { width: px, height: px } : undefined
-  const ring = 'border-2 border-ink rounded-full overflow-hidden inline-block flex-none'
+  const ring = 'border-[3px] border-ink rounded-full overflow-hidden inline-block flex-none'
 
   if (url) {
     return (
