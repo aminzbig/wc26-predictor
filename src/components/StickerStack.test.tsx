@@ -14,13 +14,13 @@ test('renders one star per delta, collapsed by default', () => {
   expect(toggle.querySelectorAll('.sticker')).toHaveLength(3)
 })
 
-test('tapping fans out and shows each value; tapping again collapses', () => {
+test('each sticker is labelled; tapping toggles the fanned-out state', () => {
   render(<StickerStack deltas={[10, -10]} />)
   const toggle = screen.getByRole('button', { name: /admin stickers/i })
+  expect(screen.getByText('+10 admin')).toBeInTheDocument()
+  expect(screen.getByText('-10 admin')).toBeInTheDocument()
   fireEvent.click(toggle)
   expect(toggle).toHaveAttribute('aria-expanded', 'true')
-  expect(screen.getByText('+10')).toBeInTheDocument()
-  expect(screen.getByText('-10')).toBeInTheDocument()
   fireEvent.click(toggle)
   expect(toggle).toHaveAttribute('aria-expanded', 'false')
 })
