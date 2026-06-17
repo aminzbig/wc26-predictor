@@ -1,30 +1,28 @@
-import { useState } from 'react'
 import { adminStickers } from '../lib/adminStickers'
 
-// A pile of admin reward/penalty stickers on a ranking row. Each sticker is
-// labelled (e.g. "+10 admin"); collapsed they overlap into a pile, and tapping
-// fans them out so every label is fully readable.
+// A pile of admin reward/penalty stickers on a ranking row. They overlap into a
+// tight, drop-shadowed stack so the layering reads. Each sticker shows its value
+// on two lines ("+10" / "admin"); pressing/holding one pops it up and enlarges it
+// (like an iOS keyboard key) so it's readable — the stack itself never separates.
 export function StickerStack({ deltas }: { deltas: number[] | null }) {
-  const [expanded, setExpanded] = useState(false)
   const stickers = adminStickers(deltas)
   if (stickers.length === 0) return null
 
   return (
-    <button
-      type="button"
-      aria-label="admin stickers"
-      aria-expanded={expanded}
-      onClick={() => setExpanded(e => !e)}
-      className={`flex-none flex items-center bg-transparent border-0 p-0 ${expanded ? 'gap-1.5' : ''}`}>
+    <span role="group" aria-label="admin stickers" className="flex-none flex items-center">
       {stickers.map((s, i) => (
-        <span
+        <button
+          type="button"
           key={i}
-          className={`star-badge sticker sticker--${s.variant} grid place-items-center
-            w-[54px] h-[54px] font-display text-[10px] leading-[1.05] text-center px-1
-            ${expanded ? '' : i > 0 ? '-ml-5' : ''}`}>
-          {s.delta > 0 ? `+${s.delta} admin` : `${s.delta} admin`}
-        </span>
+          aria-label={`${s.delta > 0 ? '+' : ''}${s.delta} admin`}
+          className={`star-badge sticker sticker--${s.variant} appearance-none border-0 p-0
+            w-[60px] h-[60px] ${i > 0 ? '-ml-10' : ''}`}>
+          <span className="flex flex-col items-center justify-center leading-none">
+            <span className="font-display text-[16px]">{s.delta > 0 ? `+${s.delta}` : `${s.delta}`}</span>
+            <span className="font-display text-[8px] tracking-wider mt-0.5">admin</span>
+          </span>
+        </button>
       ))}
-    </button>
+    </span>
   )
 }
