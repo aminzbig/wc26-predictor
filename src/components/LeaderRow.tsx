@@ -16,12 +16,12 @@ export function LeaderRow({ row, rank, isMe, idx = 0 }: { row: Row; rank: number
         ${top ? 'bg-ink text-yellow' : 'text-ink'}`}>
         {rank}
       </div>
-      <Avatar url={row.avatar_url} code={row.flag_code} label={row.name} size="md" />
+      <Avatar url={row.avatar_url} code={row.flag_code} label={row.name} px={43} />
       <div className="flex-1 min-w-0">
         <div className="font-display text-[18px] uppercase leading-none truncate">
           {isMe ? `You · ${row.name}` : row.name}
         </div>
-        <small className="font-sans font-800 text-[10px] uppercase tracking-widest text-ink/60">
+        <small className="block font-sans font-800 text-[10px] uppercase tracking-widest text-ink/60 leading-none mt-0.5">
           {row.exact_hits} exact · {row.diff_hits} diff
         </small>
       </div>

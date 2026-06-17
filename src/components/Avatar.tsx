@@ -7,31 +7,33 @@ const DIM: Record<'sm' | 'md' | 'lg', string> = {
   lg: 'w-[56px] h-[56px]',
 }
 
-export function Avatar({ url, code, label, size = 'md' }: {
+export function Avatar({ url, code, label, size = 'md', px }: {
   url?: string | null
   code?: string | null
   label?: string | null
   size?: 'sm' | 'md' | 'lg'
+  px?: number // exact pixel size; overrides `size` when set
 }) {
-  const dim = DIM[size]
+  const dim = px ? '' : DIM[size]
+  const style = px ? { width: px, height: px } : undefined
   const ring = 'border-2 border-ink rounded-full overflow-hidden inline-block flex-none'
 
   if (url) {
     return (
-      <span className={`${dim} ${ring} relative bg-paper`}>
+      <span style={style} className={`${dim} ${ring} relative bg-paper`}>
         <img src={url} alt={label ?? 'avatar'} className="absolute inset-0 w-full h-full object-cover" />
       </span>
     )
   }
   if (code) {
     return (
-      <span className={`${dim} ${ring} relative`}>
+      <span style={style} className={`${dim} ${ring} relative`}>
         <span className={`fi fi-${code} absolute inset-0 !w-full !h-full bg-cover`} />
       </span>
     )
   }
   return (
-    <span className={`${dim} ${ring} bg-paper grid place-items-center text-[9px] text-ink/60 font-sans font-800 uppercase`}>
+    <span style={style} className={`${dim} ${ring} bg-paper grid place-items-center text-[9px] text-ink/60 font-sans font-800 uppercase`}>
       {label?.slice(0, 2) ?? '?'}
     </span>
   )

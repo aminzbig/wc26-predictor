@@ -60,8 +60,8 @@ export function SocialHero({ view, canDelete, tapped, onReact, onDelete }: {
 
       <div className={`${colorClass(view.color)} border-[4px] border-ink rounded-[26px] p-5 shadow-[6px_6px_0_#141210]`}>
         <div className="flex items-center gap-2.5">
-          <Avatar url={view.author_avatar} code={view.author_flag} label={view.author_name} size="md" />
-          <span className="font-display uppercase text-[18px] tracking-wide">{view.author_name}</span>
+          <Avatar url={view.author_avatar} code={view.author_flag} label={view.author_name} px={44} />
+          <span className="font-display uppercase text-[22px] tracking-wide">{view.author_name}</span>
           <span className={`ml-auto text-[12px] font-900 ${light ? 'opacity-80' : 'opacity-70'}`}>
             {relativeTime(view.created_at)}
           </span>
