@@ -65,3 +65,17 @@ begin
     alter publication supabase_realtime add table admin_points;
   end if;
 end $$;
+
+-- v1 (0018) added `players` to the publication for the leaderboard; v2 no
+-- longer subscribes to it (the points moved to admin_points). Drop it so the
+-- publication doesn't broadcast player-row changes with no subscriber.
+do $$
+begin
+  if exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'players'
+  )
+  then
+    alter publication supabase_realtime drop table players;
+  end if;
+end $$;
