@@ -16,15 +16,25 @@ body {
   clip-path: polygon(50% 0%,61% 18%,82% 12%,79% 34%,98% 45%,82% 58%,90% 80%,66% 76%,55% 98%,44% 78%,20% 86%,24% 62%,4% 52%,22% 38%,14% 16%,38% 20%);
 }
 
-/* admin-points reward sticker (sits on a star-badge shape) */
+/* admin-points reward sticker (sits on a star-badge shape).
+   The filter does two jobs: a WHITE die-cut border (8 tight 1px-1.5px white
+   drop-shadows ring the star silhouette) so overlapping same-colour stickers
+   stay crisply separated and read like real peel-off stickers, plus a soft dark
+   cast shadow for depth on the board. The rainbow is animated on the BACKGROUND
+   (not the filter) so this border/shadow stays consistent on bonus stars too. */
 .sticker {
   position: relative;
   display: grid;
   place-items: center;
   transform: rotate(-6deg);
   color: #fff;
-  text-shadow: 0 1px 1px rgba(0,0,0,.4);
-  filter: drop-shadow(-7px 6px 5px rgba(20,18,16,.82));
+  text-shadow: 0 1px 1px rgba(0,0,0,.45);
+  filter:
+    drop-shadow(1.5px 0 0 #fff)   drop-shadow(-1.5px 0 0 #fff)
+    drop-shadow(0 1.5px 0 #fff)   drop-shadow(0 -1.5px 0 #fff)
+    drop-shadow(1px 1px 0 #fff)   drop-shadow(-1px 1px 0 #fff)
+    drop-shadow(1px -1px 0 #fff)  drop-shadow(-1px -1px 0 #fff)
+    drop-shadow(-5px 6px 5px rgba(20,18,16,.7));
   transition: transform .14s cubic-bezier(.34, 1.56, .64, 1);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
@@ -37,27 +47,31 @@ body {
   z-index: 30;
   outline: none;
 }
-/* Bonus rainbow: the pinball extra-ball ball treatment — a single FLAT solid
-   colour (no gradient) that sweeps the whole hue wheel at hsl(hue, 90%, 70%)
-   (pinball cycles ~1.5 turns/s; calmer here for a persistent badge). hue-rotate
-   keeps saturation/lightness while cycling the hue. */
+/* Bonus rainbow: the pinball extra-ball treatment — a single FLAT solid colour
+   (no gradient) cycling the whole hue wheel at hsl(hue, 90%, 70%), animated on
+   the background so the white border + shadow above are left untouched. */
 .sticker--holo {
-  background: hsl(0, 90%, 70%);
+  background-color: hsl(0, 90%, 70%);
   animation: adminHolo 2.5s linear infinite;
 }
 @keyframes adminHolo {
-  from { filter: drop-shadow(-7px 6px 5px rgba(20,18,16,.82)) hue-rotate(0deg); }
-  to   { filter: drop-shadow(-7px 6px 5px rgba(20,18,16,.82)) hue-rotate(360deg); }
+  0%   { background-color: hsl(0, 90%, 70%); }
+  16%  { background-color: hsl(58, 90%, 70%); }
+  33%  { background-color: hsl(120, 90%, 70%); }
+  50%  { background-color: hsl(180, 90%, 70%); }
+  66%  { background-color: hsl(240, 90%, 70%); }
+  83%  { background-color: hsl(300, 90%, 70%); }
+  100% { background-color: hsl(360, 90%, 70%); }
 }
 /* Penalty: a single flat solid red. */
 .sticker--bad {
-  background: #e22a1c;
+  background-color: #e22a1c;
 }
 @media (prefers-reduced-motion: reduce) {
   /* no cycling — rest on a flat solid gold (classic reward star), distinct from the red penalty. */
   .sticker--holo {
     animation: none;
-    background: hsl(45, 95%, 58%);
+    background-color: hsl(45, 95%, 58%);
   }
 }
 
