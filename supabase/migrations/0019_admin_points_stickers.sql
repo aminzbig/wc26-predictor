@@ -1,5 +1,11 @@
 -- Admin points v2: a list of individual +/-10 "stickers" per player,
 -- replacing the single players.admin_units integer (migration 0018).
+--
+-- Ordering matters: the 0018 leaderboard view and players_update_self policy
+-- both depend on players.admin_units, so we must recreate those dependent
+-- objects WITHOUT admin_units before we can drop the column. The view's
+-- trailing column also changes type (admin_units int -> admin_deltas
+-- smallint[]), which CREATE OR REPLACE VIEW cannot do, so we DROP + CREATE it.
 
 -- 1. New table: one row per sticker.
 create table if not exists admin_points (
@@ -18,9 +24,9 @@ drop policy if exists admin_points_admin_write on admin_points;
 create policy admin_points_admin_write on admin_points for all to authenticated
   using (is_admin()) with check (is_admin());
 
--- 3. Drop the v1 column and revert the self-update policy to the original
---    (freeze is_admin + legacy_points only; admin_units no longer exists).
-alter table players drop column if exists admin_units;
+-- 3. Recreate the self-update policy WITHOUT the admin_units clause (back to the
+--    pre-0018 original: freeze is_admin + legacy_points only). This removes the
+--    policy's dependency on the admin_units column.
 drop policy if exists players_update_self on players;
 create policy players_update_self on players for update to authenticated
   using (id = auth.uid())
@@ -30,9 +36,14 @@ create policy players_update_self on players for update to authenticated
     and legacy_points = (select legacy_points from players where id = auth.uid())
   );
 
--- 4. Leaderboard view: sum sticker deltas into total and expose the ordered
---    array. Scalar subqueries (not a join) keep the predictions aggregation intact.
-create or replace view leaderboard as
+-- 4. Drop the old view (it depends on admin_units), then drop the column.
+drop view if exists leaderboard;
+alter table players drop column if exists admin_units;
+
+-- 5. Recreate the leaderboard view: sum sticker deltas into total and expose the
+--    ordered array. Scalar subqueries (not a join) keep the predictions
+--    aggregation intact.
+create view leaderboard as
 select
   pl.id, pl.name, pl.flag_code,
   pl.legacy_points
@@ -53,7 +64,7 @@ group by pl.id, pl.name, pl.flag_code, pl.avatar_url, pl.legacy_points;
 
 grant select on leaderboard to authenticated;
 
--- 5. Broadcast admin_points changes so the leaderboard refreshes live.
+-- 6. Broadcast admin_points changes so the leaderboard refreshes live.
 do $$
 begin
   if exists (select 1 from pg_publication where pubname = 'supabase_realtime')
