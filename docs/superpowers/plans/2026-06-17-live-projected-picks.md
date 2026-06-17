@@ -419,7 +419,7 @@ function HaloPoints({ value }: { value: number }) {
   }, [value])
   return (
     <div className={`flex-none grid place-items-center w-[50px] h-[40px] border-2 border-ink/50 bg-paper ${pulse ? 'halo-pulse' : ''}`}>
-      <div className="font-display text-[22px] leading-none text-ink">{value}</div>
+      <div className="font-display text-[22px] leading-none text-ink/50">{value}</div>
       <div className="mt-0.5 font-sans font-900 text-[6px] uppercase tracking-[0.2em] leading-none text-ink/50">proj</div>
     </div>
   )
