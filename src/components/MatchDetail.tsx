@@ -88,9 +88,13 @@ function PicksBoard({ rows, match }: { rows: PeoplePick[]; match: Match }) {
           return (
             <motion.div
               key={r.id}
+              layout
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: Math.min(i * 0.04, 0.4), type: 'spring', stiffness: 320, damping: 26 }}
+              transition={{
+                layout: { type: 'spring', stiffness: 380, damping: 30 },
+                delay: Math.min(i * 0.04, 0.4), type: 'spring', stiffness: 320, damping: 26,
+              }}
               className={`flex items-center gap-2 px-1.5 py-1.5 border-t-2 border-ink/10 first:border-t-0 ${isTop ? 'bg-yellow border-t-yellow' : ''}`}
             >
               {/* Rank — leader wears the starburst, the rest a plain numeral */}
