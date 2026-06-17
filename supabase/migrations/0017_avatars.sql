@@ -9,15 +9,18 @@ alter table players add column if not exists avatar_blend smallint;
 alter table players add column if not exists avatar_mode text;
 
 -- 2. Leaderboard view must surface avatar_url so leaderboard rows render the avatar.
+-- avatar_url is appended as the LAST column so `create or replace view` accepts it
+-- (it forbids inserting/renaming columns mid-list).
 create or replace view leaderboard as
 select
-  pl.id, pl.name, pl.flag_code, pl.avatar_url,
+  pl.id, pl.name, pl.flag_code,
   pl.legacy_points + coalesce(sum(pr.points_awarded),0)::int as total,
   count(*) filter (where m.status='finished'
     and pr.home_pred = m.home_score and pr.away_pred = m.away_score) as exact_hits,
   count(*) filter (where m.status='finished'
     and not (pr.home_pred = m.home_score and pr.away_pred = m.away_score)
-    and pr.home_pred - pr.away_pred = m.home_score - m.away_score) as diff_hits
+    and pr.home_pred - pr.away_pred = m.home_score - m.away_score) as diff_hits,
+  pl.avatar_url
 from players pl
 left join predictions pr on pr.player_id = pl.id
 left join matches m on m.id = pr.match_id and m.status='finished'
