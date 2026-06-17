@@ -16,6 +16,41 @@ body {
   clip-path: polygon(50% 0%,61% 18%,82% 12%,79% 34%,98% 45%,82% 58%,90% 80%,66% 76%,55% 98%,44% 78%,20% 86%,24% 62%,4% 52%,22% 38%,14% 16%,38% 20%);
 }
 
+/* admin-points reward sticker (sits on a star-badge shape) */
+.sticker {
+  position: relative;
+  display: grid;
+  place-items: center;
+  transform: rotate(-8deg);
+  color: #fff;
+  text-shadow: 0 1px 1px rgba(0,0,0,.35);
+  filter: drop-shadow(0 2px 2px rgba(20,18,16,.35));
+}
+/* glossy highlight */
+.sticker::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  clip-path: inherit;
+  background: linear-gradient(135deg, rgba(255,255,255,.55), rgba(255,255,255,0) 45%);
+  pointer-events: none;
+}
+.sticker--holo {
+  background: linear-gradient(135deg, #ff3d7f, #ffb800, #2ad17e, #2ab6ff, #9b5cff, #ff3d7f);
+  background-size: 300% 300%;
+  animation: adminHolo 6s linear infinite;
+}
+@keyframes adminHolo {
+  0%   { background-position: 0% 50%; filter: hue-rotate(0deg); }
+  100% { background-position: 100% 50%; filter: hue-rotate(360deg); }
+}
+.sticker--bad {
+  background: radial-gradient(circle at 35% 30%, #ff6a6a, #d11a1a 70%);
+}
+@media (prefers-reduced-motion: reduce) {
+  .sticker--holo { animation: none; }
+}
+
 /* score number inputs: hide spin buttons so the digit sits dead-center */
 input[type='number']::-webkit-inner-spin-button,
 input[type='number']::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
