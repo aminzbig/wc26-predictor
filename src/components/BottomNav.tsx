@@ -14,7 +14,7 @@ export function BottomNav() {
   )
 
   return (
-    <nav className="fixed bottom-0 inset-x-0 max-w-md mx-auto flex border-t-[4px] border-ink bg-paper z-50">
+    <nav className="shrink-0 flex border-t-[4px] border-ink bg-paper z-50">
       <NavLink to="/matches" className={itemClass('border-r-[3px] border-ink')}>
         {({ isActive }) => <>
           {isActive && <Active />}

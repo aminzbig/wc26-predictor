@@ -13,11 +13,17 @@ import { AdminPlayers } from './screens/admin/AdminPlayers'
 import { AdminPoints } from './screens/admin/AdminPoints'
 import { AdminSettings } from './screens/admin/AdminSettings'
 
+// Fixed-height flex column: the content area scrolls internally while the nav
+// stays put. This avoids iOS Safari's `position: fixed` quirk where a
+// bottom-pinned bar anchors to the layout viewport and floats mid-screen as the
+// page scrolls.
 const Shell = ({ children }: { children: React.ReactNode }) =>
-  <div className="max-w-md mx-auto bg-paper px-4 pt-4 pb-24 min-h-full">
-    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25, ease: 'easeOut' }}>
-      {children}
-    </motion.div>
+  <div className="max-w-md mx-auto bg-paper h-[100dvh] flex flex-col">
+    <div className="flex-1 overflow-y-auto px-4 pt-4 pb-6">
+      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25, ease: 'easeOut' }}>
+        {children}
+      </motion.div>
+    </div>
     <BottomNav />
   </div>
 
