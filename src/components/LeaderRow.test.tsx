@@ -4,24 +4,22 @@ import type { LeaderRow as Row } from '../lib/types'
 
 const base: Row = {
   id: 'p1', name: 'Sofia', flag_code: 'pt', avatar_url: null,
-  total: 120, exact_hits: 2, diff_hits: 3, admin_units: 0,
+  total: 120, exact_hits: 2, diff_hits: 3, admin_deltas: null,
 }
 
-test('no sticker when admin_units is 0', () => {
+test('renders name and total', () => {
   render(<LeaderRow row={base} rank={1} isMe={false} />)
-  expect(screen.queryByText(/admin/)).toBeNull()
+  expect(screen.getByText('Sofia')).toBeInTheDocument()
+  expect(screen.getByText('120')).toBeInTheDocument()
 })
 
-test('positive admin_units shows a holographic +N0 admin sticker', () => {
-  render(<LeaderRow row={{ ...base, admin_units: 3 }} rank={1} isMe={false} />)
-  const badge = screen.getByText('+30 admin')
-  expect(badge).toBeInTheDocument()
-  expect(badge.className).toContain('sticker--holo')
+test('no sticker stack when admin_deltas is empty/null', () => {
+  render(<LeaderRow row={base} rank={1} isMe={false} />)
+  expect(screen.queryByRole('button', { name: /admin stickers/i })).toBeNull()
 })
 
-test('negative admin_units shows a red -N0 admin sticker', () => {
-  render(<LeaderRow row={{ ...base, admin_units: -2 }} rank={1} isMe={false} />)
-  const badge = screen.getByText('-20 admin')
-  expect(badge).toBeInTheDocument()
-  expect(badge.className).toContain('sticker--bad')
+test('shows a sticker stack when admin_deltas present', () => {
+  render(<LeaderRow row={{ ...base, admin_deltas: [10, 10, -10] }} rank={1} isMe={false} />)
+  const stack = screen.getByRole('button', { name: /admin stickers/i })
+  expect(stack.querySelectorAll('.sticker')).toHaveLength(3)
 })
