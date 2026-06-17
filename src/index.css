@@ -46,20 +46,27 @@ body {
   background: linear-gradient(135deg, rgba(255,255,255,.55), rgba(255,255,255,0) 45%);
   pointer-events: none;
 }
+/* Bonus rainbow: the pinball extra-ball ball treatment — a uniform hsl(hue, 90%, 70%)
+   colour sweeping the whole hue wheel (pinball cycles ~1.5 turns/s; calmer here for a
+   persistent badge). hue-rotate keeps saturation/lightness while cycling the hue. */
 .sticker--holo {
-  background: linear-gradient(135deg, #ff3d7f, #ffb800, #2ad17e, #2ab6ff, #9b5cff, #ff3d7f);
-  background-size: 300% 300%;
-  animation: adminHolo 6s linear infinite;
+  background: hsl(0, 90%, 70%);
+  animation: adminHolo 2.5s linear infinite;
 }
 @keyframes adminHolo {
-  0%   { background-position: 0% 50%;   filter: drop-shadow(1px 2px 3px rgba(20,18,16,.55)) hue-rotate(0deg); }
-  100% { background-position: 100% 50%; filter: drop-shadow(1px 2px 3px rgba(20,18,16,.55)) hue-rotate(360deg); }
+  from { filter: drop-shadow(1px 2px 3px rgba(20,18,16,.55)) hue-rotate(0deg); }
+  to   { filter: drop-shadow(1px 2px 3px rgba(20,18,16,.55)) hue-rotate(360deg); }
 }
 .sticker--bad {
   background: radial-gradient(circle at 35% 30%, #ff6a6a, #d11a1a 70%);
 }
 @media (prefers-reduced-motion: reduce) {
-  .sticker--holo { animation: none; }
+  /* no cycling — show a static rainbow so it still reads as the special bonus sticker */
+  .sticker--holo {
+    animation: none;
+    background: linear-gradient(135deg,
+      hsl(0,90%,70%), hsl(55,90%,70%), hsl(120,90%,70%), hsl(190,90%,70%), hsl(265,90%,70%), hsl(325,90%,70%));
+  }
 }
 
 /* score number inputs: hide spin buttons so the digit sits dead-center */
