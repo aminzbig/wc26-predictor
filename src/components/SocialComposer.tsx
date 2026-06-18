@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Pencil } from 'lucide-react'
 import {
@@ -14,8 +14,8 @@ const BASE = 16 // composer preview base px, scaled by the chosen size
 
 // Same glass recipe as BottomNav, so the composer reads as part of the dock.
 const GLASS =
-  'border-[3px] border-ink bg-paper/80 backdrop-blur-xl ' +
-  'supports-[backdrop-filter]:bg-paper/70 ' +
+  'border-[3px] border-ink bg-paper/65 backdrop-blur-xl ' +
+  'supports-[backdrop-filter]:bg-paper/55 ' +
   'shadow-[0_12px_30px_-8px_rgba(20,18,16,0.5)]'
 
 export function SocialComposer({ matchList, onPost }: {
@@ -41,7 +41,7 @@ export function SocialComposer({ matchList, onPost }: {
     onPost(body.trim(), color, font, scale, matchId || null)
     setBody(''); setMatchId(''); setPickMatch(false); setExpanded(false)
   }
-  function collapse() { setExpanded(false); setPickMatch(false) }
+  const collapse = useCallback(() => { setExpanded(false); setPickMatch(false) }, [])
 
   // Esc collapses the expanded editor.
   useEffect(() => {
@@ -49,7 +49,7 @@ export function SocialComposer({ matchList, onPost }: {
     function onKey(e: KeyboardEvent) { if (e.key === 'Escape') collapse() }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [expanded])
+  }, [expanded, collapse])
 
   const tucked = hidden && !expanded // slid down behind the nav
 
