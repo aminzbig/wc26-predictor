@@ -3,7 +3,7 @@ import { SocialCard } from '../components/SocialCard'
 import { useSocialPosts } from '../hooks/useSocialPosts'
 
 export function Social() {
-  const { hero, feed, loading, me, isAdmin, matchList, mine, post, react, remove } = useSocialPosts()
+  const { hero, feed, loading, me, isAdmin, matchList, post, react, remove } = useSocialPosts()
   const canDelete = (authorId: string) => authorId === me || isAdmin
   // All posts render at the same size — newest first, no oversized lead card.
   const posts = hero ? [hero, ...feed] : feed
@@ -26,7 +26,6 @@ export function Social() {
               key={v.id}
               view={v}
               canDelete={canDelete(v.author_id)}
-              tapped={mine[v.id] ?? []}
               onReact={k => react(v.id, k)}
               onDelete={() => remove(v.id)}
             />

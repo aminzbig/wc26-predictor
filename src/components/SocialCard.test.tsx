@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { SocialCard } from './SocialCard'
 import type { PostView } from '../lib/social'
 
@@ -10,21 +11,22 @@ const view: PostView = {
 }
 
 test('renders author, body, and a reaction count', () => {
-  render(<SocialCard view={view} canDelete={false} tapped={[]} onReact={() => {}} onDelete={() => {}} />)
+  render(<SocialCard view={view} canDelete={false} onReact={() => {}} onDelete={() => {}} />)
   expect(screen.getByText('Sofia')).toBeInTheDocument()
   expect(screen.getByText('my bracket is dead')).toBeInTheDocument()
   expect(screen.getByText('18')).toBeInTheDocument()
 })
 
 test('shows delete control only when canDelete', () => {
-  const { rerender } = render(<SocialCard view={view} canDelete={false} tapped={[]} onReact={() => {}} onDelete={() => {}} />)
+  const { rerender } = render(<SocialCard view={view} canDelete={false} onReact={() => {}} onDelete={() => {}} />)
   expect(screen.queryByRole('button', { name: /delete/i })).toBeNull()
-  rerender(<SocialCard view={view} canDelete tapped={[]} onReact={() => {}} onDelete={() => {}} />)
+  rerender(<SocialCard view={view} canDelete onReact={() => {}} onDelete={() => {}} />)
   expect(screen.getByRole('button', { name: /delete/i })).toBeInTheDocument()
 })
 
-test('tapped reactions are marked pressed', () => {
-  render(<SocialCard view={view} canDelete={false} tapped={['heart']} onReact={() => {}} onDelete={() => {}} />)
-  expect(screen.getByRole('button', { name: 'heart' })).toHaveAttribute('aria-pressed', 'true')
-  expect(screen.getByRole('button', { name: 'up' })).toHaveAttribute('aria-pressed', 'false')
+test('clicking a reaction fires onReact with its key', async () => {
+  const onReact = vi.fn()
+  render(<SocialCard view={view} canDelete={false} onReact={onReact} onDelete={() => {}} />)
+  await userEvent.click(screen.getByRole('button', { name: 'heart' }))
+  expect(onReact).toHaveBeenCalledWith('heart')
 })

@@ -106,7 +106,6 @@ export const SCALES: { value: SocialScale; label: string }[] = [
   { value: 0.5, label: '½×' },
   { value: 1,   label: '1×' },
   { value: 2,   label: '2×' },
-  { value: 3,   label: '3×' },
 ]
 export const validScale = (n: number): n is SocialScale => SCALES.some(s => s.value === n)
 

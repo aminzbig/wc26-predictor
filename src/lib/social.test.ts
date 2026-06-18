@@ -54,10 +54,11 @@ describe('social helpers', () => {
     expect(fontClass('impact')).toBe('font-display')
     expect(fontClass('pixel')).toBe('font-pixel')
   })
-  test('validScale accepts only ½×/1×/2×/3×', () => {
+  test('validScale accepts only ½×/1×/2×', () => {
     expect(validScale(0.5)).toBe(true)
     expect(validScale(1)).toBe(true)
-    expect(validScale(3)).toBe(true)
+    expect(validScale(2)).toBe(true)
+    expect(validScale(3)).toBe(false) // 3× was removed from the picker
     expect(validScale(1.5)).toBe(false)
     expect(validScale(4)).toBe(false)
   })
