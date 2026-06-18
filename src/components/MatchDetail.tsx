@@ -581,7 +581,7 @@ export function MatchDetail({ match, prediction, onSave, onClose }: {
             {/* Your prediction */}
             {prediction && (
               <div className="mt-4 text-[12px] font-sans font-900 uppercase tracking-widest">
-                Your prediction: {prediction.home_pred} – {prediction.away_pred}
+                Your prediction: {h3} {prediction.home_pred} – {a3} {prediction.away_pred}
               </div>
             )}
 
@@ -592,11 +592,13 @@ export function MatchDetail({ match, prediction, onSave, onClose }: {
               </div>
             )}
 
+            {/* Everyone's picks — revealed once the match locks at kickoff (state !== 'open') */}
+            {state !== 'open' && <PeoplePredictions match={match} />}
+
             {/* API-Football: prediction, form, lineups */}
             <PredictionBlock match={match} />
             <FormSection match={match} />
             <LineupsSection match={match} />
-            {state !== 'open' && <PeoplePredictions match={match} />}
           </div>
         </motion.div>
       </motion.div>

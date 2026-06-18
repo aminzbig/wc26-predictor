@@ -21,9 +21,6 @@ export function AdminResults() {
 
   return (
     <>
-      <div className="bg-ink text-paper px-3 py-2 mb-1">
-        <h1 className="font-display text-[20px] uppercase tracking-wide">Admin</h1>
-      </div>
       <AdminTabs />
       {matches.map(m => (
         <div key={m.id} className="border-[3px] border-ink bg-paper p-3 mb-3">

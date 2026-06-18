@@ -19,9 +19,6 @@ export function AdminSettings() {
 
   return (
     <>
-      <div className="bg-ink text-paper px-3 py-2 mb-1">
-        <h1 className="font-display text-[20px] uppercase tracking-wide">Admin</h1>
-      </div>
       <AdminTabs />
       <p className="font-sans font-700 text-[11px] uppercase tracking-widest text-ink/60 mb-3">
         Scoring values. Changes apply when matches are (re)scored.

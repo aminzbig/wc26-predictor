@@ -1,67 +1,48 @@
 import { NavLink } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Trophy, User, Circle, Shield, MessageCircle } from 'lucide-react'
+import { Trophy, User, Circle, Shield, MessageCircle, ListOrdered } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 
+// Floating glass dock: detached from the bottom edge and overlaid on the
+// scrolling content, so whatever sits behind it shows through blurred (glass).
+// Icons only — the active tab gets a sliding filled pill (framer layoutId).
 export function BottomNav() {
   const { player } = useAuth()
-  const itemClass = (extra: string) => ({ isActive }: { isActive: boolean }) =>
-    `relative flex-1 flex flex-col items-center gap-0.5 py-3 font-display text-[13px] uppercase tracking-wide ${extra} ${isActive ? 'bg-ink text-paper' : 'text-ink'}`
-  const Active = () => (
-    <motion.span layoutId="navbar-indicator"
-      className="absolute top-0 inset-x-0 h-[4px] bg-yellow"
-      transition={{ type: 'spring', stiffness: 400, damping: 32 }} />
-  )
+
+  const items: { to: string; label: string; Icon: LucideIcon }[] = [
+    { to: '/matches', label: 'Matches', Icon: Circle },
+    { to: '/standings', label: 'Standings', Icon: ListOrdered },
+    { to: '/ranking', label: 'Ranking', Icon: Trophy },
+    { to: '/social', label: 'Social', Icon: MessageCircle },
+    { to: '/me', label: 'Me', Icon: User },
+    ...(player?.is_admin ? [{ to: '/admin', label: 'Admin', Icon: Shield }] : []),
+  ]
 
   return (
-    <nav className="shrink-0 flex border-t-[4px] border-ink bg-paper z-50">
-      <NavLink to="/matches" className={itemClass('border-r-[3px] border-ink')}>
-        {({ isActive }) => <>
-          {isActive && <Active />}
-          <motion.span animate={{ scale: isActive ? 1.15 : 1 }} transition={{ type: 'spring', stiffness: 400, damping: 20 }}>
-            <Circle size={18} className={isActive ? 'text-paper' : 'text-ink'} />
-          </motion.span>
-          Matches
-        </>}
-      </NavLink>
-      <NavLink to="/ranking" className={itemClass('border-r-[3px] border-ink')}>
-        {({ isActive }) => <>
-          {isActive && <Active />}
-          <motion.span animate={{ scale: isActive ? 1.15 : 1 }} transition={{ type: 'spring', stiffness: 400, damping: 20 }}>
-            <Trophy size={18} className={isActive ? 'text-paper' : 'text-ink'} />
-          </motion.span>
-          Ranking
-        </>}
-      </NavLink>
-      <NavLink to="/social" className={itemClass('border-r-[3px] border-ink')}>
-        {({ isActive }) => <>
-          {isActive && <Active />}
-          <motion.span animate={{ scale: isActive ? 1.15 : 1 }} transition={{ type: 'spring', stiffness: 400, damping: 20 }}>
-            <MessageCircle size={18} className={isActive ? 'text-paper' : 'text-ink'} />
-          </motion.span>
-          Social
-        </>}
-      </NavLink>
-      <NavLink to="/me" className={itemClass(player?.is_admin ? 'border-r-[3px] border-ink' : '')}>
-        {({ isActive }) => <>
-          {isActive && <Active />}
-          <motion.span animate={{ scale: isActive ? 1.15 : 1 }} transition={{ type: 'spring', stiffness: 400, damping: 20 }}>
-            <User size={18} className={isActive ? 'text-paper' : 'text-ink'} />
-          </motion.span>
-          Me
-        </>}
-      </NavLink>
-      {player?.is_admin && (
-        <NavLink to="/admin" className={itemClass('')}>
+    <nav className="absolute inset-x-4 bottom-[calc(env(safe-area-inset-bottom)+24px)] z-50
+                    flex items-center justify-around gap-1
+                    border-[3px] border-ink
+                    bg-paper/65 backdrop-blur-xl supports-[backdrop-filter]:bg-paper/55
+                    px-2 py-2
+                    shadow-[0_12px_30px_-8px_rgba(20,18,16,0.5)]">
+      {items.map(({ to, label, Icon }) => (
+        <NavLink key={to} to={to} aria-label={label}
+          className="relative flex h-12 w-12 items-center justify-center">
           {({ isActive }) => <>
-            {isActive && <Active />}
-            <motion.span animate={{ scale: isActive ? 1.15 : 1 }} transition={{ type: 'spring', stiffness: 400, damping: 20 }}>
-              <Shield size={18} className={isActive ? 'text-paper' : 'text-ink'} />
+            {isActive && (
+              <motion.span layoutId="navbar-pill"
+                className="absolute inset-0 bg-ink"
+                transition={{ type: 'spring', stiffness: 400, damping: 32 }} />
+            )}
+            <motion.span className="relative z-10"
+              animate={{ scale: isActive ? 1.12 : 1 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 20 }}>
+              <Icon size={26} strokeWidth={2.75} className={isActive ? 'text-paper' : 'text-ink'} />
             </motion.span>
-            Admin
           </>}
         </NavLink>
-      )}
+      ))}
     </nav>
   )
 }

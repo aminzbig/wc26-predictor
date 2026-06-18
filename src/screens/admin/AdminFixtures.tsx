@@ -28,9 +28,6 @@ export function AdminFixtures() {
 
   return (
     <>
-      <div className="bg-ink text-paper px-3 py-2 mb-1">
-        <h1 className="font-display text-[20px] uppercase tracking-wide">Admin</h1>
-      </div>
       <AdminTabs />
       <div className="border-[3px] border-ink bg-paper p-4 mb-4 grid grid-cols-2 gap-2">
         <select value={f.stage} onChange={e => setF({ ...f, stage: e.target.value as Stage })}

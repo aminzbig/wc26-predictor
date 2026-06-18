@@ -28,7 +28,7 @@ export function MatchGrid({ matches, byMatch, onOpen, focusId }: {
   }, [focusId, matches.length])
 
   return (
-    <div ref={containerRef} className="h-full overflow-y-auto -mx-1 px-1 pb-2">
+    <div ref={containerRef} className="h-full overflow-y-auto -mx-1 px-1 pb-[100px]">
       <motion.div
         className="grid grid-cols-2 auto-rows-[124px] gap-2"
         initial="hidden"

@@ -39,10 +39,6 @@ export function Me() {
 
   return (
     <>
-      <div className="bg-ink text-paper px-3 py-2 mb-4">
-        <h1 className="font-display text-[20px] uppercase tracking-wide">Me</h1>
-      </div>
-
       {/* Stats panel */}
       <div className="border-[3px] border-ink bg-paper p-4 mb-4">
         <div className="flex items-center gap-3 mb-3">

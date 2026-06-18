@@ -4,11 +4,9 @@ import { usePredictions } from '../hooks/usePredictions'
 import { MatchDeck } from '../components/MatchDeck'
 import { MatchGrid } from '../components/MatchGrid'
 import { MatchDetail } from '../components/MatchDetail'
-import { ViewToggle, type View } from '../components/ViewToggle'
-import { matchState } from '../lib/matchState'
+import { type View } from '../components/ViewToggle'
+import { Layers, LayoutGrid } from 'lucide-react'
 import type { Match } from '../lib/types'
-
-type Filter = 'all' | 'upcoming' | 'finished'
 
 // Which card to open on: a game playing right now, else the next upcoming one,
 // else the most recent. (list is sorted ascending by kickoff.)
@@ -32,67 +30,49 @@ function initialFocus(list: Match[]) {
 export function Matches() {
   const { matches, loading } = useMatches()
   const { byMatch, save } = usePredictions()
-  const [filter, setFilter] = useState<Filter>('all')
   const [view, setView] = useState<View>('deck')
   const [index, setIndex] = useState(-1)
   const [selected, setSelected] = useState<Match | null>(null)
 
   // Sorted ascending by kickoff.
-  const sorted = useMemo(
+  const shown = useMemo(
     () => [...matches].sort((a, b) => new Date(a.kickoff_at).getTime() - new Date(b.kickoff_at).getTime()),
     [matches],
   )
-
-  const shown = useMemo(() => sorted.filter(m => {
-    if (filter === 'all') return true
-    const s = matchState(m)
-    if (filter === 'upcoming') return s === 'open'
-    return s === 'finished'
-  }), [sorted, filter])
 
   // Set initial index once when matches first load (don't reset on realtime reloads).
   useEffect(() => {
     if (index === -1 && shown.length > 0) setIndex(initialFocus(shown))
   }, [shown, index])
 
-  // Keep index in range when filter changes / list shrinks.
+  // Keep index in range when the list shrinks.
   useEffect(() => {
     if (index >= shown.length) setIndex(Math.max(0, shown.length - 1))
   }, [shown.length, index])
-
-  const onFilter = (f: Filter) => {
-    setFilter(f)
-    // recompute a sensible position for the new filtered list
-    const next = sorted.filter(m => {
-      if (f === 'all') return true
-      const s = matchState(m)
-      if (f === 'upcoming') return s === 'open'
-      return s === 'finished'
-    })
-    setIndex(initialFocus(next))
-  }
 
   if (loading) return <p className="font-sans font-700 text-ink/60 uppercase text-sm tracking-wide">Loading matches…</p>
 
   const safeIndex = Math.max(0, Math.min(index, shown.length - 1))
   // Re-derive the open match from the fresh list so realtime score/odds updates flow in.
-  const selectedLive = selected ? (sorted.find(m => m.id === selected.id) ?? selected) : null
+  const selectedLive = selected ? (shown.find(m => m.id === selected.id) ?? selected) : null
 
   return (
     <>
-      <div className="flex flex-col h-[calc(100dvh-120px)]">
-        {/* Poster header */}
-        <div className="bg-ink text-paper px-3 py-2 mb-3 flex justify-between items-center shrink-0">
-          <h1 className="font-display text-[20px] uppercase tracking-wide">Matches</h1>
-          <ViewToggle view={view} setView={setView} />
-        </div>
-
-        {/* Filter chips */}
+      {/* Deck is a bounded, non-scrolling stack → sits above the floating dock
+          (h-[calc(100dvh-120px)] === viewport minus the Shell's pt+pb). Grid
+          scrolls, so it fills to the viewport bottom and the negative margin
+          cancels the Shell's reserved bottom padding (no double scroll); its
+          tiles then scroll BEHIND the translucent dock. */}
+      <div className={`flex flex-col ${view === 'grid'
+        ? 'h-[calc(100dvh-16px)] -mb-[calc(env(safe-area-inset-bottom)+104px)]'
+        : 'h-[calc(100dvh-120px)]'}`}>
+        {/* Deck / Grid view toggle */}
         <div className="flex gap-0 mb-4 border-[3px] border-ink shrink-0">
-          {(['all', 'upcoming', 'finished'] as Filter[]).map(f =>
-            <button key={f} onClick={() => onFilter(f)}
-              className={`flex-1 font-display text-[13px] uppercase tracking-wide py-2 border-r-[3px] border-ink last:border-r-0 ${filter === f ? 'bg-ink text-paper' : 'bg-paper text-ink'}`}>
-              {f}
+          {([['deck', Layers, 'Deck'], ['grid', LayoutGrid, 'Grid']] as const).map(([v, Icon, label]) =>
+            <button key={v} onClick={() => setView(v)} aria-pressed={view === v}
+              className={`flex-1 flex items-center justify-center gap-1.5 font-display text-[13px] uppercase tracking-wide py-2 border-r-[3px] border-ink last:border-r-0 ${view === v ? 'bg-ink text-paper' : 'bg-paper text-ink'}`}>
+              <Icon size={15} />
+              {label}
             </button>)}
         </div>
 
