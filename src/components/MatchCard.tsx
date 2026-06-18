@@ -125,7 +125,7 @@ export function MatchCard({ match, prediction, onSave, onOpen }:
       {/* Live score banner — above the teams, below the game info */}
       {live && (
         <div className="shrink-0 mt-1.5 border-y-2 border-ink/20 py-1 text-center">
-          <div className="font-display text-[clamp(22px,4.6vh,34px)] leading-none">{match.live_home} <span className="opacity-40">–</span> {match.live_away}</div>
+          <div className="font-display text-[clamp(33px,6.9vh,51px)] leading-none">{match.live_home} <span className="opacity-40">–</span> {match.live_away}</div>
           <div className="font-sans font-900 text-[8px] uppercase tracking-widest opacity-80 mt-0.5">Live{match.live_minute ? ` ${match.live_minute}'` : ''}</div>
         </div>
       )}
