@@ -67,9 +67,11 @@ export function SocialComposer({ matchList, onPost }: {
         )}
       </AnimatePresence>
 
-      {/* Floating composer, centered to the app column above the nav. */}
+      {/* Floating composer, centered to the app column above the nav.
+          Centered via inset-x-0 + mx-auto (NOT translate-x) so framer-motion's
+          `y` transform doesn't clobber the horizontal centering. */}
       <motion.div
-        className={`fixed left-1/2 w-full max-w-md -translate-x-1/2 px-4 ${expanded ? 'z-[60]' : 'z-30'}`}
+        className={`fixed inset-x-0 mx-auto w-full max-w-md px-4 ${expanded ? 'z-[60]' : 'z-30'}`}
         style={{ bottom: `calc(env(safe-area-inset-bottom) + 104px + ${kbInset}px)` }}
         initial={{ y: 80, opacity: 0 }}
         animate={{ y: tucked ? 160 : 0, opacity: tucked ? 0 : 1 }}
