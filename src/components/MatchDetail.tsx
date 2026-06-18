@@ -542,7 +542,7 @@ export function MatchDetail({ match, prediction, onSave, onClose }: {
                 showing your locked prediction. */}
             {live && (
               <div className="mb-4 border-y-2 border-ink/20 py-1.5 text-center">
-                <div className="font-display text-[34px] leading-none">{match.live_home} <span className="opacity-40">–</span> {match.live_away}</div>
+                <div className="font-display text-[51px] leading-none">{match.live_home} <span className="opacity-40">–</span> {match.live_away}</div>
                 <div className="font-sans font-900 text-[9px] uppercase tracking-widest opacity-80 mt-1">Live{match.live_minute ? ` ${match.live_minute}'` : ''}</div>
               </div>
             )}
