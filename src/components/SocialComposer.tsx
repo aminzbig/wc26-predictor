@@ -55,7 +55,9 @@ export function SocialComposer({ matchList, onPost }: {
 
   return (
     <>
-      {/* Scrim dims the feed while composing; tap to collapse. */}
+      {/* Scrim dims the feed while composing; tap OR scroll over it to
+          collapse (scroll-to-dismiss, same as tapping out). Collapsing
+          unmounts the textarea, which also closes the keyboard. */}
       <AnimatePresence>
         {expanded && (
           <motion.div
@@ -63,6 +65,8 @@ export function SocialComposer({ matchList, onPost }: {
             className="fixed inset-0 z-[55] bg-ink/30"
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             onClick={collapse}
+            onWheel={collapse}
+            onTouchMove={collapse}
           />
         )}
       </AnimatePresence>
