@@ -40,7 +40,7 @@ type CountCol = 'heart_count' | 'up_count' | 'down_count' | 'sandal_count' | 'de
 export const REACTIONS: { key: Reaction; emoji: string; column: CountCol }[] = [
   { key: 'heart',  emoji: '❤️', column: 'heart_count' },
   { key: 'up',     emoji: '👍', column: 'up_count' },
-  { key: 'down',   emoji: '👎', column: 'down_count' },
+  { key: 'down',   emoji: '🍆', column: 'down_count' },
   { key: 'sandal', emoji: '🩴', column: 'sandal_count' },
   { key: 'dead',   emoji: '💀', column: 'dead_count' },
 ]
