@@ -44,8 +44,12 @@ export function MatchDeck({ matches, index, setIndex, byMatch, onSave, onOpen }:
 
   return (
     <div className="flex flex-col h-full select-none">
-      {/* Deck stack — upcoming cards peek above the active one */}
-      <div className="relative flex-1 min-h-0">
+      {/* Deck stack — upcoming cards peek above the active one. overflow-hidden
+          clips the active card's horizontal drag / fly-out (exit x: ±340) so it
+          can't widen the page (no sideways scrollbar / scroll-to-another-page).
+          The peek cards sit at positive offsets inside the stack, so they're not
+          clipped. */}
+      <div className="relative flex-1 min-h-0 overflow-hidden">
         {/* Furthest peek (above, smallest) */}
         {peek2 && (
           <div aria-hidden className={`${CARD_POS} z-[1] pointer-events-none`}

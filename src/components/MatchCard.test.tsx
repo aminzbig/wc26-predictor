@@ -9,15 +9,17 @@ const m: Match = {
   home_score: null, away_score: null, multiplier: 1, status: 'scheduled',
 }
 
-test('open match shows lock button', () => {
+test('open match shows editable score inputs (auto-saves, no lock button)', () => {
   render(<MatchCard match={m} prediction={undefined} onSave={async () => {}} />)
-  expect(screen.getByRole('button', { name: /lock/i })).toBeInTheDocument()
+  expect(screen.getByLabelText(/Brazil predicted score/i)).toBeInTheDocument()
+  expect(screen.getByLabelText(/Croatia predicted score/i)).toBeInTheDocument()
 })
-test('finished match shows points', () => {
+test('finished match shows the points star', () => {
   const fin: Match = { ...m, status: 'finished', home_score: 1, away_score: 1,
     kickoff_at: new Date(Date.now() - 3.6e6).toISOString() }
   render(<MatchCard match={fin}
     prediction={{ id: 'p', player_id: 'x', match_id: '1', home_pred: 1, away_pred: 1, points_awarded: 30 }}
     onSave={async () => {}} />)
-  expect(screen.getByText(/\+30/)).toBeInTheDocument()
+  expect(screen.getByText('POINTS')).toBeInTheDocument()
+  expect(screen.getByText('30')).toBeInTheDocument()
 })

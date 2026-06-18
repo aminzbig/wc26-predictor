@@ -97,7 +97,10 @@ Deno.serve(async (req) => {
         const f = byPair.get(pair(m.home_label, m.away_label))
         if (f) {
           fixtureId = f.fixture.id; homeTeam = f.teams.home.id; awayTeam = f.teams.away.id
-          await db.from('matches').update({ api_fixture_id: fixtureId, home_api_team: homeTeam, away_api_team: awayTeam }).eq('id', m.id)
+          await db.from('matches').update({
+            api_fixture_id: fixtureId, home_api_team: homeTeam, away_api_team: awayTeam,
+            venue_name: f.fixture.venue?.name ?? null, venue_city: f.fixture.venue?.city ?? null,
+          }).eq('id', m.id)
           mapped++
         }
       }

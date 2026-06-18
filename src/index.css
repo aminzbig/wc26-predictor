@@ -75,6 +75,14 @@ body {
   }
 }
 
+/* Live indicator dot — blinks red ↔ ink (black) */
+@keyframes live-blink {
+  0%, 49.9% { color: #e22a1c; }
+  50%, 100% { color: #141210; }
+}
+.live-dot { animation: live-blink 1.1s steps(1, end) infinite; }
+@media (prefers-reduced-motion: reduce) { .live-dot { animation: none; color: #e22a1c; } }
+
 /* score number inputs: hide spin buttons so the digit sits dead-center */
 input[type='number']::-webkit-inner-spin-button,
 input[type='number']::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }

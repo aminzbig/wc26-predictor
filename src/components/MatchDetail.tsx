@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Lock } from 'lucide-react'
-import type { Match, Prediction, Lineup, SquadPlayer } from '../lib/types'
+import type { Match, Prediction, Lineup, SquadPlayer, WcRunGame } from '../lib/types'
 import { matchState } from '../lib/matchState'
 import { supabase } from '../lib/supabase'
 import { rankLivePicks } from '../lib/livePicks'
-import { Flag } from './Flag'
+import { GameInfo, FlagPanel, TeamNameBar, PointsStar, ScoreLine } from './matchFace'
 import { Avatar } from './Avatar'
 
 type PeoplePick = { id: string; name: string; flag_code: string | null; avatar_url: string | null; home_pred: number; away_pred: number; points: number | null }
@@ -286,6 +286,62 @@ function FormSection({ match }: { match: Match }) {
   )
 }
 
+// One team's run in this World Cup: a row of tappable score chips (W/D/L coloured);
+// tapping one reveals that game's possession / shots-on-target / corners.
+function WcRunTeamRow({ label, fallback, run }: { label: string | null; fallback: string; run: WcRunGame[] }) {
+  const [open, setOpen] = useState<number | null>(null)
+  if (!run || run.length === 0) return null
+  const g = open != null ? run[open] : null
+  return (
+    <div className="mb-2 last:mb-0">
+      <div className="flex items-center gap-2">
+        <div className="font-display text-[14px] uppercase tracking-wide w-12 flex-none">{shortLabel(label, fallback)}</div>
+        <div className="flex gap-1.5 flex-wrap">
+          {run.map((x, i) => (
+            <button
+              key={x.id}
+              type="button"
+              onClick={() => setOpen(open === i ? null : i)}
+              title={`${x.gf}-${x.ga} vs ${x.opp}`}
+              className={`w-[46px] h-[24px] grid place-items-center font-display text-[12px] leading-none border-2 border-ink ${FORM_BADGE[x.result]}`}
+            >
+              {x.gf}–{x.ga}
+            </button>
+          ))}
+        </div>
+      </div>
+      {g && (
+        <div className="mt-1.5 bg-paper border-[3px] border-ink p-2 text-ink">
+          <div className="font-display text-[13px] uppercase leading-none mb-2 truncate">
+            {g.result === 'W' ? 'Beat' : g.result === 'L' ? 'Lost to' : 'Drew'} {g.opp} · {g.gf}–{g.ga}
+          </div>
+          <div className="grid grid-cols-3 gap-1.5">
+            {([['Possession', g.poss], ['Shots on target', g.sot], ['Corners', g.cor]] as const).map(([l, v]) => (
+              <div key={l} className="border-2 border-ink p-1.5 text-center">
+                <div className="font-display text-[18px] leading-none">{v ?? '—'}</div>
+                <div className="mt-1 text-[8px] font-sans font-900 uppercase tracking-wider opacity-70 leading-none">{l}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function WorldCupRun({ match }: { match: Match }) {
+  const hr = match.home_wc_run ?? []
+  const ar = match.away_wc_run ?? []
+  if (hr.length === 0 && ar.length === 0) return null
+  return (
+    <div className="mt-4 border-[3px] border-ink bg-paper text-ink p-2.5">
+      <div className="font-display text-[18px] uppercase tracking-wide leading-none mb-2">World Cup run</div>
+      <WcRunTeamRow label={match.home_label} fallback="Home" run={hr} />
+      <WcRunTeamRow label={match.away_label} fallback="Away" run={ar} />
+    </div>
+  )
+}
+
 const POS_WORD: Record<string, string> = { G: 'Goalkeeper', D: 'Defender', M: 'Midfielder', F: 'Forward' }
 
 function expandPos(pos: string | null): string {
@@ -438,31 +494,6 @@ function panelColor(match_no: number) {
   return PANEL_COLORS[match_no % PANEL_COLORS.length]
 }
 
-const STAGE_LABEL: Record<string, string> = {
-  group: 'Group', r32: 'Round of 32', r16: 'Round of 16',
-  qf: 'Quarter-final', sf: 'Semi-final', third: 'Third place', final: 'Final',
-}
-
-function DScore({ v, set }: { v: number; set?: (n: number) => void }) {
-  return (
-    <input
-      type="number" min={0} value={v} disabled={!set}
-      onChange={e => set?.(Math.max(0, +e.target.value))}
-      onFocus={e => e.target.select()}
-      className={`w-[52px] h-[56px] text-center font-display text-[32px] border-[3px] border-ink bg-paper text-ink outline-none flex-none ${!set ? 'opacity-90' : ''}`}
-    />
-  )
-}
-
-function BigTeam({ code, label }: { code: string | null; label: string | null }) {
-  return (
-    <div className="flex items-center gap-2.5 flex-1 min-w-0">
-      <Flag code={code} label={label} />
-      <div className="font-display text-[26px] uppercase leading-none tracking-wide truncate">{label}</div>
-    </div>
-  )
-}
-
 export function MatchDetail({ match, prediction, onSave, onClose }: {
   match: Match
   prediction?: Prediction
@@ -488,11 +519,24 @@ export function MatchDetail({ match, prediction, onSave, onClose }: {
     setAp(prediction?.away_pred ?? 0)
   }, [prediction?.home_pred, prediction?.away_pred])
 
+  // Auto-save: debounce edits and persist them — no explicit "Update prediction" button.
+  const savedH = prediction?.home_pred ?? 0, savedA = prediction?.away_pred ?? 0
+  useEffect(() => {
+    if (!editable) return
+    if (hp === savedH && ap === savedA) return
+    const t = setTimeout(async () => {
+      setSaving(true)
+      try { await onSave(hp, ap) } finally { setSaving(false) }
+    }, 700)
+    return () => clearTimeout(t)
+  }, [hp, ap, editable, savedH, savedA]) // eslint-disable-line react-hooks/exhaustive-deps
+
   const mult = match.multiplier ?? 1
-  const stageText = match.group_label
-    ? match.group_label
-    : (STAGE_LABEL[match.stage] ?? match.stage.toUpperCase())
-  const headerLine = `×${mult} · ${stageText}`.toUpperCase()
+  const finished = state === 'finished'
+  // Giant flag numbers are the player's prediction; real/live score sits in the banner.
+  const homeNum = editable ? hp : (prediction?.home_pred ?? null)
+  const awayNum = editable ? ap : (prediction?.away_pred ?? null)
+  const points = finished ? prediction?.points_awarded ?? null : null
 
   const ph = match.prob_home, pd = match.prob_draw ?? 0, pa = match.prob_away ?? 0
   const showOdds = ph != null
@@ -530,45 +574,61 @@ export function MatchDetail({ match, prediction, onSave, onClose }: {
               <X size={20} />
             </button>
 
-            {/* Header */}
-            <div className="text-[11px] font-sans font-900 uppercase tracking-widest mb-1">{headerLine}</div>
-            <div className="text-[12px] font-sans font-700 uppercase tracking-wider mb-4 opacity-80">
-              {new Date(match.kickoff_at).toLocaleString(undefined, {
-                weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
-              })}
+            {/* Header: game info (group · date · stadium · city) + multiplier + status / winners */}
+            <div className="flex items-start justify-between gap-2 mb-3 pr-9">
+              <GameInfo match={match} big />
+              <div className="flex-none flex flex-col items-end gap-1.5">
+                {mult > 1 && <span className="font-display text-[14px] leading-none bg-ink text-yellow px-1.5 py-1">×{mult}</span>}
+                <span className="font-sans font-900 text-[10px] uppercase tracking-widest flex items-center gap-1">
+                  {state === 'open' && '★ OPEN'}
+                  {state === 'locked' && (live
+                    ? <>● LIVE{match.live_minute ? ` ${match.live_minute}'` : ''}</>
+                    : <><Lock size={10} />LOCKED</>)}
+                  {finished && 'FT'}
+                </span>
+              </div>
             </div>
 
-            {/* Live score banner — mirrors the card; the score boxes below keep
-                showing your locked prediction. */}
+            {/* Flags + giant prediction numbers + rainbow points star */}
+            <div className="relative flex items-stretch gap-2 h-[clamp(200px,34vh,280px)]">
+              <FlagPanel code={match.home_code} label={match.home_label} value={homeNum} editable={editable} onChange={setHp} />
+              <FlagPanel code={match.away_code} label={match.away_label} value={awayNum} editable={editable} onChange={setAp} />
+              {points != null && (
+                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[40%] aspect-square z-10">
+                  <PointsStar points={points} multiplier={match.multiplier} />
+                </div>
+              )}
+            </div>
+
+            {/* Team names */}
+            <div className="mt-2">
+              <TeamNameBar home={match.home_label} away={match.away_label} full divider={panelColor(match.match_no ?? 0).split(' ')[0]} />
+            </div>
+
+            {/* Live / Full-time score — on the card background (no boxed banner) */}
             {live && (
-              <div className="mb-4 border-y-2 border-ink/20 py-1.5 text-center">
-                <div className="font-display text-[51px] leading-none">{match.live_home} <span className="opacity-40">–</span> {match.live_away}</div>
-                <div className="font-sans font-900 text-[9px] uppercase tracking-widest opacity-80 mt-1">Live{match.live_minute ? ` ${match.live_minute}'` : ''}</div>
+              <div className="mt-2 text-center">
+                <div className="font-sans font-900 text-[10px] uppercase tracking-widest leading-none">
+                  <span className="live-dot">●</span> Live{match.live_minute ? ` ${match.live_minute}'` : ''}
+                </div>
+                <ScoreLine home={match.live_home} away={match.live_away} className="text-[48px] mt-1" />
+              </div>
+            )}
+            {finished && (
+              <div className="mt-2 text-center">
+                <div className="font-sans font-900 text-[10px] uppercase tracking-widest opacity-80 leading-none">Full time</div>
+                <ScoreLine home={match.home_score} away={match.away_score} className="text-[48px] mt-1" />
               </div>
             )}
 
-            {/* Teams + scores */}
-            <div className="flex items-center gap-2 mb-3">
-              <BigTeam code={match.home_code} label={match.home_label} />
-              <DScore v={state === 'finished' ? match.home_score! : hp} set={editable ? setHp : undefined} />
-            </div>
-            <div className="flex items-center gap-2 mb-1">
-              <BigTeam code={match.away_code} label={match.away_label} />
-              <DScore v={state === 'finished' ? match.away_score! : ap} set={editable ? setAp : undefined} />
-            </div>
-
-            {/* Save / status */}
+            {/* Auto-save status (open) / locked hint */}
             {state === 'open' && (
-              <button
-                disabled={saving}
-                onClick={async () => { setSaving(true); try { await onSave(hp, ap); onClose() } finally { setSaving(false) } }}
-                className="w-full mt-4 bg-ink text-paper font-display text-[15px] uppercase tracking-widest py-3 text-center disabled:opacity-50"
-              >
-                {prediction ? 'Update prediction' : 'Lock prediction'}
-              </button>
+              <div className="mt-3 text-[12px] font-sans font-700 uppercase tracking-wider opacity-80 text-center">
+                {saving ? 'Saving…' : prediction ? 'Prediction saved — tap a score to change' : 'Tap a score to predict'}
+              </div>
             )}
-            {state === 'locked' && (
-              <div className="flex items-center gap-1.5 text-[12px] font-sans font-700 uppercase tracking-wider mt-4 opacity-80">
+            {state === 'locked' && !live && (
+              <div className="flex items-center gap-1.5 text-[12px] font-sans font-700 uppercase tracking-wider mt-3 opacity-80">
                 <Lock size={13} /> Prediction locked
               </div>
             )}
@@ -588,10 +648,14 @@ export function MatchDetail({ match, prediction, onSave, onClose }: {
               </div>
             )}
 
-            {/* Your prediction */}
+            {/* Your prediction — full team names so the abbreviations in the card
+                bar are spelled out here. */}
             {prediction && (
-              <div className="mt-4 text-[12px] font-sans font-900 uppercase tracking-widest">
-                Your prediction: {h3} {prediction.home_pred} – {a3} {prediction.away_pred}
+              <div className="mt-4">
+                <div className="text-[11px] font-sans font-900 uppercase tracking-widest opacity-70">Your prediction</div>
+                <div className="mt-1 font-display text-[18px] uppercase tracking-wide leading-tight">
+                  {match.home_label ?? 'Home'} {prediction.home_pred} <span className="opacity-40">–</span> {prediction.away_pred} {match.away_label ?? 'Away'}
+                </div>
               </div>
             )}
 
@@ -605,8 +669,9 @@ export function MatchDetail({ match, prediction, onSave, onClose }: {
             {/* Everyone's picks — revealed once the match locks at kickoff (state !== 'open') */}
             {state !== 'open' && <PeoplePredictions match={match} />}
 
-            {/* API-Football: prediction, form, lineups */}
+            {/* API-Football: prediction, World Cup run, form, lineups */}
             <PredictionBlock match={match} />
+            <WorldCupRun match={match} />
             <FormSection match={match} />
             <LineupsSection match={match} />
           </div>

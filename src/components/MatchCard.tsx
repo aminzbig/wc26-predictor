@@ -3,82 +3,11 @@ import { motion } from 'framer-motion'
 import { Lock } from 'lucide-react'
 import type { Match, Prediction } from '../lib/types'
 import { matchState } from '../lib/matchState'
-import { Flag } from './Flag'
+import { GameInfo, TopThreePredictors, FlagPanel, TeamNameBar, PointsStar, ScoreLine } from './matchFace'
 
 // Panel color cycles deterministically by match_no so each card looks bold.
 const PANEL_COLORS = ['bg-orange', 'bg-green', 'bg-blue text-paper', 'bg-yellow', 'bg-red text-paper']
-function panelColor(match_no: number) {
-  return PANEL_COLORS[match_no % PANEL_COLORS.length]
-}
-
-// All vertical sizes use clamp(min, vh, max) so the card fits on short phones
-// (no clipped Lock button) and still looks bold on tall ones. No <input> → no
-// mobile keyboard; +/- stop propagation so they don't open the detail or swipe.
-const BOX_W = 'w-[clamp(40px,11vw,52px)]'
-function StepBtn({ label, onTap }: { label: string; onTap: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={e => { e.stopPropagation(); onTap() }}
-      onPointerDown={e => e.stopPropagation()}
-      className={`${BOX_W} h-[clamp(20px,2.6vh,28px)] grid place-items-center font-display text-[clamp(16px,2.4vh,20px)] leading-none text-ink select-none`}
-    >
-      {label}
-    </button>
-  )
-}
-
-function Sbox({ v, set, dim }: { v: number; set?: (n: number) => void; dim?: boolean }) {
-  if (!set) {
-    return (
-      <div className={`${BOX_W} h-[clamp(40px,6vh,58px)] flex items-center justify-center leading-none font-display text-[clamp(22px,4.4vh,32px)] border-[3px] border-ink bg-paper flex-none ${dim ? 'text-ink/40' : 'text-ink opacity-90'}`}>
-        {v}
-      </div>
-    )
-  }
-  return (
-    <div className="flex-none flex flex-col items-center">
-      <StepBtn label="+" onTap={() => set(Math.min(20, v + 1))} />
-      <div className={`${BOX_W} h-[clamp(32px,4.4vh,44px)] grid place-items-center font-display text-[clamp(20px,3.6vh,30px)] leading-none border-[3px] border-ink bg-paper text-ink`}>
-        {v}
-      </div>
-      <StepBtn label="−" onTap={() => set(Math.max(0, v - 1))} />
-    </div>
-  )
-}
-
-function Team({ code, label, sub }: { code: string | null; label: string | null; sub?: string }) {
-  return (
-    <div className="flex items-center gap-2.5 flex-1 min-w-0">
-      <Flag code={code} label={label} size="lg" />
-      <div className="font-display text-[clamp(17px,3.3vh,27px)] uppercase leading-[0.95] tracking-wide min-w-0">
-        <span className="block truncate">{label}</span>
-        {sub && <small className="block font-sans font-700 text-[10px] uppercase tracking-wider opacity-70">{sub}</small>}
-      </div>
-    </div>
-  )
-}
-
-// Bookmaker win-probability bar (populated by the odds cron). Hidden if no data
-// or the match is finished. Boxed on paper so it stays legible on any panel color.
-function OddsBar({ m }: { m: Match }) {
-  if (m.status === 'finished' || m.prob_home == null) return null
-  const ph = m.prob_home, pd = m.prob_draw ?? 0, pa = m.prob_away ?? 0
-  const h = (m.home_label ?? 'Home').slice(0, 3).toUpperCase()
-  const a = (m.away_label ?? 'Away').slice(0, 3).toUpperCase()
-  return (
-    <div className="mt-2 border-[2px] border-ink bg-paper text-ink p-1.5">
-      <div className="flex justify-between text-[9px] font-sans font-900 uppercase tracking-wider mb-1">
-        <span>{h} {ph}%</span><span>Draw {pd}%</span><span>{a} {pa}%</span>
-      </div>
-      <div className="flex h-2">
-        <div className="bg-ink" style={{ width: `${ph}%` }} />
-        <div className="bg-ink/40" style={{ width: `${pd}%` }} />
-        <div className="bg-ink/70" style={{ width: `${pa}%` }} />
-      </div>
-    </div>
-  )
-}
+const panelColor = (match_no: number) => PANEL_COLORS[match_no % PANEL_COLORS.length]
 
 export function MatchCard({ match, prediction, onSave, onOpen }:
   { match: Match; prediction?: Prediction; onSave: (h: number, a: number) => Promise<void>; onOpen?: () => void }) {
@@ -88,83 +17,99 @@ export function MatchCard({ match, prediction, onSave, onOpen }:
   const [saving, setSaving] = useState(false)
   const editable = state === 'open'
   const live = state === 'locked' && match.live_home != null // in progress with a known score
+  const finished = state === 'finished'
 
-  // keep the score in sync when the saved prediction changes (e.g. saved from the detail view)
+  // keep the score in sync when the saved prediction changes (e.g. from the detail view)
   useEffect(() => {
     setHp(prediction?.home_pred ?? 0)
     setAp(prediction?.away_pred ?? 0)
   }, [prediction?.home_pred, prediction?.away_pred])
 
-  const colorClass = panelColor(match.match_no ?? 0)
+  // Auto-save: debounce edits and persist them — no explicit "Lock prediction" button.
+  const savedH = prediction?.home_pred ?? 0, savedA = prediction?.away_pred ?? 0
+  useEffect(() => {
+    if (!editable) return
+    if (hp === savedH && ap === savedA) return
+    const t = setTimeout(async () => {
+      setSaving(true)
+      try { await onSave(hp, ap) } finally { setSaving(false) }
+    }, 700)
+    return () => clearTimeout(t)
+  }, [hp, ap, editable, savedH, savedA]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // The giant flag numbers are the player's PREDICTION (editable while open); the
+  // real/live score lives on the card background so it reads "your pick vs reality".
+  const homeNum = editable ? hp : (prediction?.home_pred ?? null)
+  const awayNum = editable ? ap : (prediction?.away_pred ?? null)
+  const points = finished ? prediction?.points_awarded ?? null : null
 
   return (
     <motion.div
       onClick={onOpen}
       whileTap={onOpen ? { scale: 0.99 } : undefined}
-      className={`${colorClass} border-[3px] border-ink p-[clamp(10px,2vh,16px)] relative h-full flex flex-col overflow-hidden ${onOpen ? 'cursor-pointer' : ''}`}>
-      {/* Starburst points badge for finished matches */}
-      {state === 'finished' && prediction?.points_awarded != null && (
-        <div
-          className="star-badge absolute -top-3 -right-2.5 w-[54px] h-[54px] bg-ink text-yellow flex items-center justify-center font-display text-[15px]"
-          style={{ transform: 'rotate(8deg)' }}
-        >
-          +{prediction.points_awarded}
-        </div>
-      )}
-
-      {/* Header row: time/group + status */}
-      <div className="flex justify-between items-center text-[10px] font-sans font-900 uppercase tracking-widest shrink-0">
-        <span className="truncate pr-2">{match.group_label ?? match.stage.toUpperCase()} · {new Date(match.kickoff_at).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
-        {state === 'open' && <span className="shrink-0">★ OPEN</span>}
-        {state === 'locked' && (live
-          ? <span className="shrink-0">● LIVE{match.live_minute ? ` ${match.live_minute}'` : ''}</span>
-          : <span className="flex items-center gap-1 shrink-0"><Lock size={10} />LOCKED</span>)}
-        {state === 'finished' && <span className="shrink-0">FT</span>}
-      </div>
-
-      {/* Live score banner — above the teams, below the game info */}
-      {live && (
-        <div className="shrink-0 mt-1.5 border-y-2 border-ink/20 py-1 text-center">
-          <div className="font-display text-[clamp(33px,6.9vh,51px)] leading-none">{match.live_home} <span className="opacity-40">–</span> {match.live_away}</div>
-          <div className="font-sans font-900 text-[8px] uppercase tracking-widest opacity-80 mt-0.5">Live{match.live_minute ? ` ${match.live_minute}'` : ''}</div>
-        </div>
-      )}
-
-      {/* Teams + scores — fill and center, scaling to the available height */}
-      <div className="flex-1 min-h-0 flex flex-col justify-center gap-[clamp(6px,2.4vh,24px)] py-2">
-        <div className="flex items-center gap-2.5">
-          <Team code={match.home_code} label={match.home_label}
-            sub={state !== 'open' && prediction ? `you: ${prediction.home_pred}` : undefined} />
-          <Sbox v={state === 'finished' ? match.home_score! : hp} set={editable ? setHp : undefined} dim={live} />
-        </div>
-        <div className="font-display text-[12px] uppercase tracking-[0.3em] opacity-40 text-center">vs</div>
-        <div className="flex items-center gap-2.5">
-          <Team code={match.away_code} label={match.away_label}
-            sub={state !== 'open' && prediction ? `you: ${prediction.away_pred}` : undefined} />
-          <Sbox v={state === 'finished' ? match.away_score! : ap} set={editable ? setAp : undefined} dim={live} />
+      className={`${panelColor(match.match_no ?? 0)} border-[3px] border-ink relative h-full flex flex-col overflow-hidden ${onOpen ? 'cursor-pointer' : ''}`}
+    >
+      {/* Header: game info (group · date · stadium · city) + status / top-3 winners */}
+      <div className="shrink-0 flex items-start justify-between gap-2 px-3 pt-3 pb-2">
+        <GameInfo match={match} />
+        <div className="flex-none pt-0.5">
+          {finished
+            ? <TopThreePredictors match={match} />
+            : (
+              <span className="font-sans font-900 text-[10px] uppercase tracking-widest flex items-center gap-1">
+                {state === 'open' && '★ OPEN'}
+                {state === 'locked' && (live
+                  ? <>● LIVE{match.live_minute ? ` ${match.live_minute}'` : ''}</>
+                  : <><Lock size={10} />LOCKED</>)}
+              </span>
+            )}
         </div>
       </div>
 
-      {/* Footer: odds + action, always visible (shrink-0) */}
-      <div className="shrink-0">
-        <OddsBar m={match} />
-        {state === 'open' && (
-          <button
-            disabled={saving}
-            onPointerDown={e => e.stopPropagation()}
-            onClick={async e => { e.stopPropagation(); setSaving(true); try { await onSave(hp, ap) } finally { setSaving(false) } }}
-            className="w-full mt-2.5 bg-ink text-paper font-display text-[clamp(13px,1.9vh,16px)] uppercase tracking-widest py-[clamp(8px,1.5vh,12px)] text-center disabled:opacity-50"
-          >
-            {prediction ? 'Update prediction' : 'Lock prediction'}
-          </button>
-        )}
-        {state === 'locked' && (
-          <div className="flex items-center gap-1.5 text-[11px] font-sans font-700 uppercase tracking-wider mt-2.5 opacity-70">
-            {live ? <>● Live now · your pick in grey · tap for details</> : <><Lock size={11} /> Prediction locked · tap for details</>}
+      {/* Flags + giant prediction numbers, full-bleed with a center divider */}
+      <div className="relative flex-1 min-h-0 flex items-stretch border-t-[3px] border-ink">
+        <FlagPanel code={match.home_code} label={match.home_label} value={homeNum} editable={editable} onChange={setHp} />
+        <div className="w-[3px] bg-ink self-stretch flex-none" />
+        <FlagPanel code={match.away_code} label={match.away_label} value={awayNum} editable={editable} onChange={setAp} />
+      </div>
+
+      {/* Points star — centered on the whole card (not just the flags area) */}
+      {points != null && (
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[40%] aspect-square z-20 pointer-events-none">
+          <PointsStar points={points} multiplier={match.multiplier} />
+        </div>
+      )}
+
+      {/* Team names — full names (shrunk to fit), matching the detail view.
+          Center divider matches the card background colour (Figma). */}
+      <TeamNameBar home={match.home_label} away={match.away_label} full divider={panelColor(match.match_no ?? 0).split(' ')[0]} />
+
+      {/* Bottom zone — on the card background (no boxed banner). Same reserved
+          height in every state so it's always an easy tap-target into the detail. */}
+      <div className="shrink-0 px-3 py-[clamp(8px,2.2vh,16px)] min-h-[clamp(72px,13.5vh,104px)] grid place-items-center text-center">
+        {live ? (
+          <div>
+            <div className="font-sans font-900 text-[11px] uppercase tracking-widest leading-none">
+              <span className="live-dot">●</span> Live{match.live_minute ? ` ${match.live_minute}'` : ''}
+            </div>
+            <ScoreLine home={match.live_home} away={match.live_away} className="text-[clamp(41px,8.4vh,67px)] mt-1" />
           </div>
-        )}
-        {state === 'finished' && (
-          <div className="text-[11px] font-sans font-700 uppercase tracking-wider mt-2.5 opacity-70 text-center">Tap for details</div>
+        ) : finished ? (
+          <div>
+            <div className="font-sans font-900 text-[11px] uppercase tracking-widest opacity-80 leading-none">Full time</div>
+            <ScoreLine home={match.home_score} away={match.away_score} className="text-[clamp(41px,8.4vh,67px)] mt-1" />
+          </div>
+        ) : state === 'open' ? (
+          <div>
+            <div className="font-sans font-700 text-[11px] uppercase tracking-wider opacity-70">
+              {saving ? 'Saving…' : prediction ? 'Prediction saved · tap a score to change' : 'Tap a score to predict'}
+            </div>
+            <div className="font-sans font-700 text-[10px] uppercase tracking-wider opacity-50 mt-1">Tap here to see the detail</div>
+          </div>
+        ) : (
+          <div className="flex items-center justify-center gap-1.5 text-[11px] font-sans font-700 uppercase tracking-wider opacity-70">
+            <Lock size={11} /> Prediction locked · tap for details
+          </div>
         )}
       </div>
     </motion.div>

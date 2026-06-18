@@ -34,14 +34,16 @@ const HOUR = 3600e3
 const now = Date.now()
 const sleep = ms => new Promise(r => setTimeout(r, ms))
 
-// 1. map unmapped matches to API-Football fixtures
+// 1. map unmapped matches to API-Football fixtures (+ backfill venue)
 const { data: ours } = await db.from('matches')
-  .select('id,home_label,away_label,home_code,kickoff_at,status,api_fixture_id,home_lineup,prediction')
+  .select('id,home_label,away_label,home_code,kickoff_at,status,api_fixture_id,home_lineup,prediction,venue_name')
 const unmapped = (ours || []).filter(m => m.home_code && !m.api_fixture_id && m.status !== 'finished')
-if (unmapped.length) {
+// Matches already linked but missing venue (the static stadium/city) get it backfilled.
+const needVenue = (ours || []).filter(m => m.api_fixture_id && !m.venue_name)
+if (unmapped.length || needVenue.length) {
   const fixtures = await api('fixtures?league=1&season=2026')
-  const byPair = new Map()
-  for (const f of fixtures) byPair.set(pair(f.teams.home.name, f.teams.away.name), f)
+  const byPair = new Map(), byId = new Map()
+  for (const f of fixtures) { byPair.set(pair(f.teams.home.name, f.teams.away.name), f); byId.set(f.fixture.id, f) }
   let mapped = 0
   for (const m of unmapped) {
     const f = byPair.get(pair(m.home_label, m.away_label))
@@ -50,10 +52,22 @@ if (unmapped.length) {
       api_fixture_id: f.fixture.id,
       home_api_team: f.teams.home.id,
       away_api_team: f.teams.away.id,
+      venue_name: f.fixture.venue?.name ?? null,
+      venue_city: f.fixture.venue?.city ?? null,
     }).eq('id', m.id)
     mapped++
   }
-  console.log(`mapped ${mapped}/${unmapped.length} fixtures`)
+  let venued = 0
+  for (const m of needVenue) {
+    const f = byId.get(m.api_fixture_id)
+    if (!f?.fixture.venue) continue
+    await db.from('matches').update({
+      venue_name: f.fixture.venue.name ?? null,
+      venue_city: f.fixture.venue.city ?? null,
+    }).eq('id', m.id)
+    venued++
+  }
+  console.log(`mapped ${mapped}/${unmapped.length} fixtures · venue ${venued}/${needVenue.length}`)
 }
 
 // reload with team ids
@@ -74,6 +88,49 @@ const teamForm = async teamId => {
     return { result: gf > ga ? 'W' : gf < ga ? 'L' : 'D', score: `${gf}-${ga}`,
       opp: (home ? f.teams.away : f.teams.home).name, date: f.fixture.date, comp: f.league.name }
   })
+}
+
+// A team's World Cup 2026 fixtures (memoized per run — same regardless of which
+// match we're enriching; we filter by date per match below).
+const wcFixturesCache = new Map()
+const teamWcFixtures = async teamId => {
+  if (wcFixturesCache.has(teamId)) return wcFixturesCache.get(teamId)
+  const fx = await api(`fixtures?league=1&season=2026&team=${teamId}`)
+  wcFixturesCache.set(teamId, fx)
+  return fx
+}
+// Per-game stats (possession / shots on target / corners) for one team, memoized.
+const statsCache = new Map()
+const fixtureStats = async (fixtureId, teamId) => {
+  const key = `${fixtureId}:${teamId}`
+  if (statsCache.has(key)) return statsCache.get(key)
+  let out = { poss: null, sot: null, cor: null }
+  try {
+    const r = await api(`fixtures/statistics?fixture=${fixtureId}&team=${teamId}`)
+    const s = {}
+    for (const x of (r[0]?.statistics || [])) s[x.type] = x.value
+    out = { poss: s['Ball Possession'] ?? null, sot: s['Shots on Goal'] ?? null, cor: s['Corner Kicks'] ?? null }
+  } catch { /* ignore */ }
+  statsCache.set(key, out)
+  return out
+}
+// This team's finished WC-2026 games BEFORE `beforeMs`, oldest→newest, with stats.
+const teamWcRun = async (teamId, beforeMs) => {
+  const fx = await teamWcFixtures(teamId)
+  const done = fx
+    .filter(f => ['FT', 'AET', 'PEN'].includes(f.fixture.status.short) && new Date(f.fixture.date).getTime() < beforeMs)
+    .sort((a, b) => new Date(a.fixture.date) - new Date(b.fixture.date))
+  const run = []
+  for (const f of done) {
+    const home = f.teams.home.id === teamId
+    const gf = home ? f.goals.home : f.goals.away
+    const ga = home ? f.goals.away : f.goals.home
+    const st = await fixtureStats(f.fixture.id, teamId)
+    await sleep(250)
+    run.push({ id: f.fixture.id, date: f.fixture.date, opp: (home ? f.teams.away : f.teams.home).name,
+      gf, ga, result: gf > ga ? 'W' : gf < ga ? 'L' : 'D', poss: st.poss, sot: st.sot, cor: st.cor })
+  }
+  return run
 }
 
 // player club history (current + previous team), memoized per run
@@ -100,10 +157,18 @@ const teamSquad = async teamId => {
   return players
 }
 
-let pred = 0, lns = 0, sqd = 0
+let pred = 0, lns = 0, sqd = 0, wcr = 0
 for (const m of near) {
   const k = new Date(m.kickoff_at).getTime()
   try {
+    // World Cup run — refetched each pass so it stays current as teams play (cheap
+    // via the per-run caches above). Both teams' finished WC games before kickoff.
+    if (m.home_api_team && m.away_api_team) {
+      const home_wc_run = await teamWcRun(m.home_api_team, k)
+      const away_wc_run = await teamWcRun(m.away_api_team, k)
+      await db.from('matches').update({ home_wc_run, away_wc_run }).eq('id', m.id)
+      wcr++
+    }
     if (!m.prediction) {
       const pr = (await api(`predictions?fixture=${m.api_fixture_id}`))[0]
       const prediction = pr ? {
@@ -168,4 +233,4 @@ for (const m of near) {
     }
   } catch (e) { console.error('match', m.api_fixture_id, e.message) }
 }
-console.log(`done — predictions/form on ${pred} matches, lineups on ${lns}, squads on ${sqd}`)
+console.log(`done — predictions/form on ${pred} matches, lineups on ${lns}, squads on ${sqd}, wc-run on ${wcr}`)

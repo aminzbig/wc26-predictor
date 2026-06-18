@@ -11,6 +11,7 @@ export interface Match {
   home_code: string | null; away_code: string | null
   home_label: string | null; away_label: string | null
   kickoff_at: string; home_score: number | null; away_score: number | null
+  venue_name?: string | null; venue_city?: string | null
   multiplier: number; status: 'scheduled' | 'finished'
   prob_home: number | null; prob_draw: number | null; prob_away: number | null
   live_home?: number | null; live_away?: number | null; live_minute?: number | null; live_status?: string | null
@@ -21,6 +22,14 @@ export interface Match {
   away_lineup?: Lineup | null
   home_squad?: SquadPlayer[] | null
   away_squad?: SquadPlayer[] | null
+  home_wc_run?: WcRunGame[] | null
+  away_wc_run?: WcRunGame[] | null
+}
+// A team's finished World Cup game (this tournament) with tap-to-see stats.
+export interface WcRunGame {
+  id: number; date: string; opp: string
+  gf: number; ga: number; result: 'W' | 'D' | 'L'
+  poss: string | null; sot: number | null; cor: number | null
 }
 export interface SquadPlayer { id: number; name: string; age: number | null; number: number | null; position: string; photo: string }
 export interface LineupPlayer { id?: number; name: string; number: number | null; pos: string | null; grid: string | null; current_team?: string | null; prev_team?: string | null }
