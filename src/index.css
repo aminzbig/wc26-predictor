@@ -5,6 +5,10 @@
 @tailwind utilities;
 
 html, body, #root { height: 100%; }
+/* Single source of truth for the usable viewport height. Defaults to dvh for
+   first paint / non-JS, then useViewportHeight() overrides it with a measured
+   px value so dvh-vs-vh mismatches in in-app browsers can't shift the layout. */
+:root { --app-vh: 100dvh; }
 body {
   @apply bg-paper text-ink font-sans antialiased;
   background-image: radial-gradient(rgba(20,18,16,.12) 1px, transparent 1px);

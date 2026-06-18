@@ -58,14 +58,16 @@ export function Matches() {
 
   return (
     <>
-      {/* Deck is a bounded, non-scrolling stack → sits above the floating dock
-          (h-[calc(100dvh-120px)] === viewport minus the Shell's pt+pb). Grid
-          scrolls, so it fills to the viewport bottom and the negative margin
-          cancels the Shell's reserved bottom padding (no double scroll); its
-          tiles then scroll BEHIND the translucent dock. */}
+      {/* Deck is a bounded, non-scrolling stack → sits above the floating dock.
+          Its height is the measured viewport (--app-vh) minus the Shell's pt
+          (16px) and pb (env(safe-area-inset-bottom)+104px), so the deck and the
+          floating dock always agree on where the bottom is. Grid scrolls, so it
+          fills to the viewport bottom and the negative margin cancels the
+          Shell's reserved bottom padding (no double scroll); its tiles then
+          scroll BEHIND the translucent dock. */}
       <div className={`flex flex-col ${view === 'grid'
-        ? 'h-[calc(100dvh-16px)] -mb-[calc(env(safe-area-inset-bottom)+104px)]'
-        : 'h-[calc(100dvh-120px)]'}`}>
+        ? 'h-[calc(var(--app-vh)-16px)] -mb-[calc(env(safe-area-inset-bottom)+104px)]'
+        : 'h-[calc(var(--app-vh)-120px-env(safe-area-inset-bottom))]'}`}>
         {/* Deck / Grid view toggle */}
         <div className="flex gap-0 mb-4 border-[3px] border-ink shrink-0">
           {([['deck', Layers, 'Deck'], ['grid', LayoutGrid, 'Grid']] as const).map(([v, Icon, label]) =>

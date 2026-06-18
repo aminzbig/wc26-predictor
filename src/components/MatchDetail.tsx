@@ -562,7 +562,7 @@ export function MatchDetail({ match, prediction, onSave, onClose }: {
           animate={{ y: 0, scale: 1, opacity: 1 }}
           exit={{ y: 60, scale: 0.92, opacity: 0 }}
           transition={{ type: 'spring', stiffness: 300, damping: 28 }}
-          className="relative w-full max-w-md max-h-[88vh] overflow-y-auto pb-28"
+          className="relative w-full max-w-md max-h-[calc(var(--app-vh)*0.88)] overflow-y-auto pb-28"
         >
           <div className={`${panelColor(match.match_no ?? 0)} border-[3px] border-ink p-4 m-3 relative`}>
             {/* Close */}
@@ -590,7 +590,7 @@ export function MatchDetail({ match, prediction, onSave, onClose }: {
             </div>
 
             {/* Flags + giant prediction numbers + rainbow points star */}
-            <div className="relative flex items-stretch gap-2 h-[clamp(200px,34vh,280px)]">
+            <div className="relative flex items-stretch gap-2 h-[clamp(200px,calc(var(--app-vh)*0.34),280px)]">
               <FlagPanel code={match.home_code} label={match.home_label} value={homeNum} editable={editable} onChange={setHp} />
               <FlagPanel code={match.away_code} label={match.away_label} value={awayNum} editable={editable} onChange={setAp} />
               {points != null && (

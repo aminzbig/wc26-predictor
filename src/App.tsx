@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useRef } from 'react'
 import { ScrollProvider } from './context/ScrollContext'
+import { useViewportHeight } from './hooks/useViewportHeight'
 import { Protected } from './components/Protected'
 import { BottomNav } from './components/BottomNav'
 import { Login } from './screens/Login'
@@ -25,7 +26,7 @@ import { AdminSettings } from './screens/admin/AdminSettings'
 const Shell = ({ children }: { children: React.ReactNode }) => {
   const scrollRef = useRef<HTMLDivElement>(null)
   return (
-    <div className="relative max-w-md mx-auto bg-paper h-[100dvh] flex flex-col">
+    <div className="relative max-w-md mx-auto bg-paper h-[var(--app-vh)] flex flex-col">
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 pt-4 pb-[calc(env(safe-area-inset-bottom)+104px)]">
         <ScrollProvider value={scrollRef}>
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25, ease: 'easeOut' }}>
@@ -39,6 +40,7 @@ const Shell = ({ children }: { children: React.ReactNode }) => {
 }
 
 export default function App() {
+  useViewportHeight()
   const base = import.meta.env.BASE_URL
   return (
     <BrowserRouter basename={base}>

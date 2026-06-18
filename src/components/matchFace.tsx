@@ -26,10 +26,10 @@ export function GameInfo({ match, big }: { match: Match; big?: boolean }) {
     month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
   })
   const venue = venueLine(match)
-  const sub = big ? 'text-[12px]' : 'text-[clamp(10px,1.6vh,12px)]'
+  const sub = big ? 'text-[12px]' : 'text-[clamp(10px,calc(var(--app-vh)*0.016),12px)]'
   return (
     <div className="min-w-0">
-      <div className={`font-display uppercase leading-[0.95] tracking-wide truncate ${big ? 'text-[28px]' : 'text-[clamp(20px,4vh,32px)]'}`}>
+      <div className={`font-display uppercase leading-[0.95] tracking-wide truncate ${big ? 'text-[28px]' : 'text-[clamp(20px,calc(var(--app-vh)*0.04),32px)]'}`}>
         {heading}
       </div>
       <div className={`font-sans font-700 tracking-wide opacity-80 leading-tight mt-1 truncate ${sub}`}>{date}</div>
@@ -143,7 +143,7 @@ export function FlagPanel({ code, label, value, editable, onChange }: {
   code: string | null; label: string | null; value: number | null
   editable?: boolean; onChange?: (n: number) => void
 }) {
-  const numCls = 'font-display text-white leading-none text-[clamp(64px,20vh,176px)]'
+  const numCls = 'font-display text-white leading-none text-[clamp(64px,calc(var(--app-vh)*0.20),176px)]'
   const shadow = { textShadow: '0 3px 12px rgba(0,0,0,.75), 0 0 6px rgba(0,0,0,.6)' } as const
 
   // Tap vs. swipe on the number:
@@ -228,10 +228,10 @@ export function TeamNameBar({ home, away, big, full, divider = 'bg-paper/25' }: 
   home: string | null; away: string | null; big?: boolean; full?: boolean; divider?: string
 }) {
   const cls = full
-    ? 'flex-1 grid place-items-center min-w-0 px-2 py-1.5 text-center font-display uppercase text-white leading-[0.9] text-[clamp(16px,3.1vh,26px)]'
-    : `flex-1 grid place-items-center min-w-0 px-2 font-display uppercase text-white leading-[0.95] ${big ? 'text-[40px]' : 'text-[clamp(22px,4.4vh,44px)]'}`
+    ? 'flex-1 grid place-items-center min-w-0 px-2 py-1.5 text-center font-display uppercase text-white leading-[0.9] text-[clamp(16px,calc(var(--app-vh)*0.031),26px)]'
+    : `flex-1 grid place-items-center min-w-0 px-2 font-display uppercase text-white leading-[0.95] ${big ? 'text-[40px]' : 'text-[clamp(22px,calc(var(--app-vh)*0.044),44px)]'}`
   return (
-    <div className={`relative flex items-stretch border-y-[3px] border-ink bg-ink ${full ? 'min-h-[clamp(44px,8vh,72px)]' : 'h-[clamp(44px,8vh,72px)]'}`}>
+    <div className={`relative flex items-stretch border-y-[3px] border-ink bg-ink ${full ? 'min-h-[clamp(44px,calc(var(--app-vh)*0.08),72px)]' : 'h-[clamp(44px,calc(var(--app-vh)*0.08),72px)]'}`}>
       <span className={cls}>{full ? (home ?? '—') : abbr3(home)}</span>
       <span className={cls}>{full ? (away ?? '—') : abbr3(away)}</span>
       {/* Spacing line — card-bg colour. Anchored full-height and extended past the
@@ -275,7 +275,7 @@ export function PointsStar({ points, multiplier = 1 }: { points: number; multipl
   const fill = starFill(points, multiplier)
   const textColor = fill.darkText ? '#141210' : '#fff'
   const textShadow = fill.darkText ? 'none' : '0 1px 3px rgba(0,0,0,.45)'
-  const numCls = 'font-display leading-[0.92] text-[clamp(14px,3.5vh,32px)]'
+  const numCls = 'font-display leading-[0.92] text-[clamp(14px,calc(var(--app-vh)*0.035),32px)]'
   return (
     <div className="relative w-full h-full select-none pointer-events-none">
       <svg viewBox="0 0 206.823 206.823" className="absolute inset-0 w-full h-full" style={{ filter: 'drop-shadow(0 6px 13px rgba(20,18,16,.65)) drop-shadow(0 2px 3px rgba(20,18,16,.55))' }}>

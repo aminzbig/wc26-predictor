@@ -86,18 +86,18 @@ export function MatchCard({ match, prediction, onSave, onOpen }:
 
       {/* Bottom zone — on the card background (no boxed banner). Same reserved
           height in every state so it's always an easy tap-target into the detail. */}
-      <div className="shrink-0 px-3 py-[clamp(8px,2.2vh,16px)] min-h-[clamp(72px,13.5vh,104px)] grid place-items-center text-center">
+      <div className="shrink-0 px-3 py-[clamp(8px,calc(var(--app-vh)*0.022),16px)] min-h-[clamp(72px,calc(var(--app-vh)*0.135),104px)] grid place-items-center text-center">
         {live ? (
           <div>
             <div className="font-sans font-900 text-[11px] uppercase tracking-widest leading-none">
               <span className="live-dot">●</span> Live{match.live_minute ? ` ${match.live_minute}'` : ''}
             </div>
-            <ScoreLine home={match.live_home} away={match.live_away} className="text-[clamp(41px,8.4vh,67px)] mt-1" />
+            <ScoreLine home={match.live_home} away={match.live_away} className="text-[clamp(41px,calc(var(--app-vh)*0.084),67px)] mt-1" />
           </div>
         ) : finished ? (
           <div>
             <div className="font-sans font-900 text-[11px] uppercase tracking-widest opacity-80 leading-none">Full time</div>
-            <ScoreLine home={match.home_score} away={match.away_score} className="text-[clamp(41px,8.4vh,67px)] mt-1" />
+            <ScoreLine home={match.home_score} away={match.away_score} className="text-[clamp(41px,calc(var(--app-vh)*0.084),67px)] mt-1" />
           </div>
         ) : state === 'open' ? (
           <div>
