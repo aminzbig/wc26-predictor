@@ -471,6 +471,7 @@ export function MatchDetail({ match, prediction, onSave, onClose }: {
 }) {
   const state = matchState(match)
   const editable = state === 'open'
+  const live = state === 'locked' && match.live_home != null // in progress with a known score
   const [hp, setHp] = useState(prediction?.home_pred ?? 0)
   const [ap, setAp] = useState(prediction?.away_pred ?? 0)
   const [saving, setSaving] = useState(false)
@@ -536,6 +537,15 @@ export function MatchDetail({ match, prediction, onSave, onClose }: {
                 weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
               })}
             </div>
+
+            {/* Live score banner — mirrors the card; the score boxes below keep
+                showing your locked prediction. */}
+            {live && (
+              <div className="mb-4 border-y-2 border-ink/20 py-1.5 text-center">
+                <div className="font-display text-[34px] leading-none">{match.live_home} <span className="opacity-40">–</span> {match.live_away}</div>
+                <div className="font-sans font-900 text-[9px] uppercase tracking-widest opacity-80 mt-1">Live{match.live_minute ? ` ${match.live_minute}'` : ''}</div>
+              </div>
+            )}
 
             {/* Teams + scores */}
             <div className="flex items-center gap-2 mb-3">
