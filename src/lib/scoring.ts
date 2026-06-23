@@ -29,6 +29,7 @@ export function projectedPoints(
   p: { hp: number; ap: number },
   r: { hs: number; as: number },
   multiplier = 1,
+  boost = 1,
 ): number {
-  return Math.round(basePoints(p, r) * multiplier)
+  return Math.round(basePoints(p, r) * multiplier * boost)
 }

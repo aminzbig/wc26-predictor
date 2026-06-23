@@ -44,4 +44,13 @@ describe('projectedPoints (live projection)', () => {
   test('missed pick projects 0', () => {
     expect(projectedPoints({ hp: 2, ap: 1 }, { hs: 0, as: 3 })).toBe(0)
   })
+  test('booster doubles the projected points', () => {
+    expect(projectedPoints({ hp: 2, ap: 1 }, { hs: 2, as: 1 }, 1, 2)).toBe(60)
+  })
+  test('booster stacks with the match multiplier', () => {
+    expect(projectedPoints({ hp: 2, ap: 1 }, { hs: 2, as: 1 }, 2, 2)).toBe(120)
+  })
+  test('default boost leaves points unchanged', () => {
+    expect(projectedPoints({ hp: 2, ap: 1 }, { hs: 2, as: 1 }, 2)).toBe(60)
+  })
 })
