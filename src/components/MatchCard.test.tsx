@@ -23,3 +23,19 @@ test('finished match shows the points star', () => {
   expect(screen.getByText('POINTS')).toBeInTheDocument()
   expect(screen.getByText('30')).toBeInTheDocument()
 })
+
+test('open match shows an available, enabled booster badge', () => {
+  render(<MatchCard match={m} onSave={async () => {}} boosterRoundUsed={false} onToggleBooster={() => {}} />)
+  expect(screen.getByRole('button', { name: /use booster/i })).toBeEnabled()
+})
+
+test('active booster shows a remove control and the rainbow outline', () => {
+  const { container } = render(<MatchCard match={m} onSave={async () => {}} boosterActive onToggleBooster={() => {}} />)
+  expect(screen.getByRole('button', { name: /remove booster/i })).toBeInTheDocument()
+  expect(container.querySelector('.booster-rainbow')).toBeTruthy()
+})
+
+test('booster already used this round renders a disabled badge', () => {
+  render(<MatchCard match={m} onSave={async () => {}} boosterRoundUsed onToggleBooster={() => {}} />)
+  expect(screen.getByRole('button', { name: /already used/i })).toBeDisabled()
+})
