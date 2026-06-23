@@ -10,7 +10,7 @@ test('available badge is an enabled button labelled "use booster"', () => {
 test('active badge shows a remove label and the rainbow ring', () => {
   const { container } = render(<BoosterBadge state="active" onClick={() => {}} />)
   expect(screen.getByRole('button', { name: /remove booster/i })).toBeInTheDocument()
-  expect(container.querySelector('.booster-rainbow')).toBeTruthy()
+  expect(container.querySelector('.booster-ring')).toBeTruthy()
 })
 
 test('disabled badge is not clickable', () => {

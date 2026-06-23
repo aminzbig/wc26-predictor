@@ -106,28 +106,46 @@ input[type='number'] { -moz-appearance: textfield; appearance: textfield; paddin
 }
 .halo-pulse { animation: halo-flash .9s ease-out; }
 
-/* Booster: bright, light-hue rainbow that flows around the card/badge border.
-   Standard gradient-border trick — the solid --card-bg layer is clipped to the
-   padding box (interior), the rainbow layer fills the border box, so only the
-   3px ring shows colour. Animating background-position slides the rainbow for a
-   continuous "evolving" feel without hue-rotating (which would tint children). */
-.booster-rainbow {
-  background-image:
-    linear-gradient(var(--card-bg, #f2eee2), var(--card-bg, #f2eee2)),
-    linear-gradient(115deg,
-      hsl(0, 95%, 72%), hsl(40, 95%, 70%), hsl(90, 90%, 68%), hsl(150, 85%, 66%),
-      hsl(195, 90%, 68%), hsl(240, 90%, 72%), hsl(290, 90%, 74%), hsl(330, 95%, 74%), hsl(360, 95%, 72%));
-  background-origin: border-box;
-  background-clip: padding-box, border-box;
-  background-size: auto, 300% 100%;
-  background-repeat: no-repeat;
-  background-position: 0 0, 0% 50%;
-  animation: booster-rainbow-move 5s linear infinite;
+/* Booster rainbow: a bright ring that SPINS continuously around the border —
+   a rotating conic-gradient (driven by an animated --booster-angle) so there's
+   no loop seam (it never "comes and goes") and it runs fast, like a holo card. */
+@property --booster-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
 }
-@keyframes booster-rainbow-move {
-  0%   { background-position: 0 0, 0% 50%; }
-  100% { background-position: 0 0, 300% 50%; }
+@keyframes booster-spin { to { --booster-angle: 360deg; } }
+
+/* List of rainbow stops, reused by both variants. */
+/* Card / filled use: OPAQUE interior (its panel colour via --card-bg) + rainbow
+   ring, via the background-clip trick (no mask, so child content is untouched). */
+.booster-rainbow {
+  border-color: transparent;
+  background:
+    linear-gradient(var(--card-bg, #f2eee2), var(--card-bg, #f2eee2)) padding-box,
+    conic-gradient(from var(--booster-angle),
+      hsl(0,95%,72%), hsl(50,95%,70%), hsl(110,90%,66%), hsl(170,90%,64%),
+      hsl(210,95%,66%), hsl(260,90%,72%), hsl(310,95%,74%), hsl(360,95%,72%)) border-box;
+  animation: booster-spin 1.1s linear infinite;
+}
+
+/* Badge use: CLEAR (transparent) interior + rainbow ring only. Drawn as an
+   absolutely-positioned layer so the "2×" stays visible; the mask hides the
+   centre so the card shows through inside the circle. */
+.booster-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  border: 3px solid transparent;
+  background: conic-gradient(from var(--booster-angle),
+      hsl(0,95%,72%), hsl(50,95%,70%), hsl(110,90%,66%), hsl(170,90%,64%),
+      hsl(210,95%,66%), hsl(260,90%,72%), hsl(310,95%,74%), hsl(360,95%,72%)) border-box;
+  -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+          mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  animation: booster-spin 1.1s linear infinite;
 }
 @media (prefers-reduced-motion: reduce) {
-  .booster-rainbow { animation: none; }
+  .booster-rainbow, .booster-ring { animation: none; }
 }

@@ -1,12 +1,10 @@
-import type { CSSProperties } from 'react'
-
-// The booster control is a big outline circle — same size/ring as the top-3
-// predictor avatars — with "2×" inside it. Tapping it sets/removes the booster;
-// when active the ring becomes an animated rainbow.
-//  • available — solid ink circle, ink ring, tappable → set the booster here
-//  • active    — rainbow ring; tappable to remove (or a static indicator when
-//                onClick is omitted: locked / finished card)
-//  • disabled  — 20% opacity, untappable (booster already used this round)
+// The booster control is a big OUTLINE circle — same ring thickness as the card
+// (border-[3px]) — with a clear (transparent) centre and "2×" inside it. Tapping
+// it sets/removes the booster; when active the ring becomes a fast spinning rainbow.
+//  • available — ink outline, clear centre, tappable → set the booster here
+//  • active    — spinning rainbow ring; tappable to remove (or a static
+//                indicator when onClick is omitted: locked / finished card)
+//  • disabled  — 20% opacity, untappable (booster already used elsewhere this round)
 export function BoosterBadge({ state, px = 56, onClick }: {
   state: 'available' | 'active' | 'disabled'
   px?: number
@@ -19,9 +17,6 @@ export function BoosterBadge({ state, px = 56, onClick }: {
       : state === 'active' ? (onClick ? 'Remove booster' : 'Booster active — points doubled')
         : 'Use booster (double points)'
 
-  const style: CSSProperties = { width: px, height: px }
-  if (rainbow) (style as Record<string, string>)['--card-bg'] = '#141210'
-
   return (
     <button
       type="button"
@@ -30,15 +25,17 @@ export function BoosterBadge({ state, px = 56, onClick }: {
       aria-pressed={state === 'active'}
       onPointerDown={e => e.stopPropagation()}
       onClick={e => { e.stopPropagation(); if (interactive) onClick!() }}
-      style={style}
+      style={{ width: px, height: px }}
       className={[
-        'grid place-items-center rounded-full bg-ink text-paper font-display leading-none select-none border-[3px]',
-        rainbow ? 'booster-rainbow border-transparent' : 'border-ink',
+        // clear centre (no background), 2× inherits the card's text colour
+        'relative grid place-items-center rounded-full bg-transparent font-display leading-none select-none',
+        rainbow ? '' : 'border-[3px] border-ink', // active: the ring layer draws the border instead
         state === 'disabled' ? 'opacity-20 pointer-events-none' : '',
         interactive ? 'cursor-pointer' : 'cursor-default',
       ].join(' ')}
     >
-      <span style={{ fontSize: Math.round(px * 0.42) }}>2×</span>
+      {rainbow && <span aria-hidden className="booster-ring" />}
+      <span className="relative" style={{ fontSize: Math.round(px * 0.42) }}>2×</span>
     </button>
   )
 }
