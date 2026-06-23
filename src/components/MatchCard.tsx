@@ -50,7 +50,8 @@ export function MatchCard({ match, prediction, onSave, onOpen, boosterActive, bo
   const points = finished ? prediction?.points_awarded ?? null : null
 
   // Booster badge state for the header (open/locked only — finished uses the avatar swap):
-  //  active → this match is the player's booster; available → round free; disabled → round already used.
+  //  active → this match is the player's booster; available → round free OR booster still
+  //  movable; disabled → round committed (booster locked onto another already-started game).
   const boosterState: 'available' | 'active' | 'disabled' | null =
     finished ? null
       : boosterActive ? 'active'

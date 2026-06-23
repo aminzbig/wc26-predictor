@@ -18,6 +18,12 @@ describe('indexBoosters', () => {
     expect(usedStages.has('r32')).toBe(true)
     expect(usedStages.has('r16')).toBe(false)
   })
+  test('maps each round (stage) to its booster', () => {
+    const { byStage } = indexBoosters(rows)
+    expect(byStage['group'].match_id).toBe('m1')
+    expect(byStage['r32'].match_id).toBe('m2')
+    expect(byStage['r16']).toBeUndefined()
+  })
   test('empty input yields empty views', () => {
     const { byMatch, usedStages } = indexBoosters([])
     expect(Object.keys(byMatch)).toHaveLength(0)

@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import type { Match, Prediction, Stage } from '../lib/types'
 import { MatchCard } from './MatchCard'
+import { matchState } from '../lib/matchState'
 
 const spring = { type: 'spring' as const, stiffness: 300, damping: 30 }
 
@@ -10,7 +11,7 @@ const spring = { type: 'spring' as const, stiffness: 300, damping: 30 }
 // stacking up toward the top bar.
 const CARD_POS = 'absolute inset-x-0 bottom-0 top-[clamp(40px,calc(var(--app-vh)*0.065),62px)]'
 
-export function MatchDeck({ matches, index, setIndex, byMatch, onSave, onOpen, boostByMatch, usedStages, setBooster, clearBooster }: {
+export function MatchDeck({ matches, index, setIndex, byMatch, onSave, onOpen, boostByMatch, byStage, setBooster, clearBooster }: {
   matches: Match[]
   index: number
   setIndex: (n: number) => void
@@ -18,7 +19,7 @@ export function MatchDeck({ matches, index, setIndex, byMatch, onSave, onOpen, b
   onSave: (matchId: string, h: number, a: number) => Promise<void>
   onOpen: (m: Match) => void
   boostByMatch: Record<string, { match_id: string; stage: Stage }>
-  usedStages: Set<Stage>
+  byStage: Record<string, { match_id: string; stage: Stage }>
   setBooster: (matchId: string, stage: Stage) => Promise<void>
   clearBooster: (matchId: string) => Promise<void>
 }) {
@@ -37,6 +38,18 @@ export function MatchDeck({ matches, index, setIndex, byMatch, onSave, onOpen, b
   const peek2 = matches[index + 2]
 
   if (!active) return null
+
+  // Booster greys siblings only once this round's booster is COMMITTED — i.e. the
+  // booster sits on a *different* game that has already locked/finished. While the
+  // boosted game is still open, every other open game in the round stays tappable
+  // (tapping moves the booster there).
+  const activeBoosted = !!boostByMatch[active.id]
+  const roundBooster = byStage[active.stage]
+  let boosterRoundCommitted = false
+  if (roundBooster && roundBooster.match_id !== active.id) {
+    const boostedMatch = matches.find(m => m.id === roundBooster.match_id)
+    boosterRoundCommitted = !boostedMatch || matchState(boostedMatch) !== 'open'
+  }
 
   // Incoming card drops down from the stack above and scales up into place;
   // the swiped card flies out sideways with a little rotation.
@@ -97,9 +110,9 @@ export function MatchDeck({ matches, index, setIndex, byMatch, onSave, onOpen, b
               prediction={byMatch[active.id]}
               onSave={(h, a) => onSave(active.id, h, a)}
               onOpen={() => { if (!dragged.current) onOpen(active) }}
-              boosterActive={!!boostByMatch[active.id]}
-              boosterRoundUsed={usedStages.has(active.stage) && !boostByMatch[active.id]}
-              onToggleBooster={() => { if (boostByMatch[active.id]) clearBooster(active.id); else setBooster(active.id, active.stage) }}
+              boosterActive={activeBoosted}
+              boosterRoundUsed={boosterRoundCommitted}
+              onToggleBooster={() => { if (activeBoosted) clearBooster(active.id); else setBooster(active.id, active.stage) }}
             />
           </motion.div>
         </AnimatePresence>

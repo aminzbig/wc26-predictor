@@ -31,7 +31,7 @@ function initialFocus(list: Match[]) {
 export function Matches() {
   const { matches, loading } = useMatches()
   const { byMatch, save } = usePredictions()
-  const { byMatch: boostByMatch, usedStages, setBooster, clearBooster } = useBoosters()
+  const { byMatch: boostByMatch, byStage, setBooster, clearBooster } = useBoosters()
   const [view, setView] = useState<View>('deck')
   const [index, setIndex] = useState(-1)
   const [selected, setSelected] = useState<Match | null>(null)
@@ -94,7 +94,7 @@ export function Matches() {
                   onSave={save}
                   onOpen={setSelected}
                   boostByMatch={boostByMatch}
-                  usedStages={usedStages}
+                  byStage={byStage}
                   setBooster={setBooster}
                   clearBooster={clearBooster}
                 />
