@@ -105,3 +105,29 @@ input[type='number'] { -moz-appearance: textfield; appearance: textfield; paddin
   100% { box-shadow: 0 0 0 0 rgba(20, 18, 16, 0); }
 }
 .halo-pulse { animation: halo-flash .9s ease-out; }
+
+/* Booster: bright, light-hue rainbow that flows around the card/badge border.
+   Standard gradient-border trick — the solid --card-bg layer is clipped to the
+   padding box (interior), the rainbow layer fills the border box, so only the
+   3px ring shows colour. Animating background-position slides the rainbow for a
+   continuous "evolving" feel without hue-rotating (which would tint children). */
+.booster-rainbow {
+  background-image:
+    linear-gradient(var(--card-bg, #f2eee2), var(--card-bg, #f2eee2)),
+    linear-gradient(115deg,
+      hsl(0, 95%, 72%), hsl(40, 95%, 70%), hsl(90, 90%, 68%), hsl(150, 85%, 66%),
+      hsl(195, 90%, 68%), hsl(240, 90%, 72%), hsl(290, 90%, 74%), hsl(330, 95%, 74%), hsl(360, 95%, 72%));
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+  background-size: auto, 300% 100%;
+  background-repeat: no-repeat;
+  background-position: 0 0, 0% 50%;
+  animation: booster-rainbow-move 5s linear infinite;
+}
+@keyframes booster-rainbow-move {
+  0%   { background-position: 0 0, 0% 50%; }
+  100% { background-position: 0 0, 300% 50%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .booster-rainbow { animation: none; }
+}
