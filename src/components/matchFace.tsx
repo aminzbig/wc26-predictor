@@ -6,6 +6,7 @@ import { createPortal } from 'react-dom'
 import type { Match } from '../lib/types'
 import { supabase } from '../lib/supabase'
 import { Avatar } from './Avatar'
+import { BoosterBadge } from './BoosterBadge'
 
 // "Stadium · City" from API-Football's fixture.venue — whichever parts we have.
 function venueLine(m: Match): string | null {
@@ -48,7 +49,7 @@ type PredRow = {
 // Only meaningful once finished — predictions are RLS-readable by then.
 type Pop = { id: string; x: number; y: number; name: string; points: number }
 
-export function TopThreePredictors({ match }: { match: Match }) {
+export function TopThreePredictors({ match, boosted }: { match: Match; boosted?: boolean }) {
   const [top, setTop] = useState<TopPick[]>([])
   const [pop, setPop] = useState<Pop | null>(null)
   const hideT = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -68,7 +69,7 @@ export function TopThreePredictors({ match }: { match: Match }) {
           }))
           .filter(r => r.points > 0)
           .sort((a, b) => b.points - a.points || a.name.localeCompare(b.name))
-          .slice(0, 3)
+          .slice(0, boosted ? 2 : 3)
         setTop(ranked)
       })
     return () => { active = false }
@@ -102,7 +103,7 @@ export function TopThreePredictors({ match }: { match: Match }) {
     hideT.current = setTimeout(() => setPop(null), 2600)
   }
 
-  if (top.length === 0) return null
+  if (top.length === 0 && !boosted) return null
   // Figma: evenly-spaced circles (not overlapping), ~60px on the 550px card.
   return (
     <div className="flex items-center gap-[10px] flex-none">
@@ -118,6 +119,7 @@ export function TopThreePredictors({ match }: { match: Match }) {
           <Avatar url={p.avatar_url} code={p.flag_code} label={p.name} size="lg" />
         </button>
       ))}
+      {boosted && <BoosterBadge state="active" px={56} />}
       {pop && createPortal(
         <div
           className="fixed z-50 -translate-x-1/2 -translate-y-full pointer-events-none flex flex-col items-center"
