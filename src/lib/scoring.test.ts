@@ -68,6 +68,11 @@ describe('far-off rule', () => {
     expect(farOffApplies(FAR_OFF_RULE_FROM)).toBe(true)               // boundary inclusive
     expect(farOffApplies('2026-06-15T18:00:00Z')).toBe(false)
   })
+  test('farOffApplies: handles PostgREST offset form (+00:00), not just Z', () => {
+    expect(farOffApplies('2026-06-24T00:00:00+00:00')).toBe(true)   // exactly at cutoff
+    expect(farOffApplies('2026-06-25T18:00:00+00:00')).toBe(true)
+    expect(farOffApplies('2026-06-15T18:00:00+00:00')).toBe(false)
+  })
   test('basePoints zeroes a far-off prediction when the rule is active', () => {
     // 5-1 vs 1-0: correct home-win outcome (+10) normally, dist 5 -> 0
     expect(basePoints({ hp: 5, ap: 1 }, { hs: 1, as: 0 })).toBe(10)            // rule off

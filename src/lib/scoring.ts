@@ -21,9 +21,10 @@ export function isFarOff(p: Pred, r: Result): boolean {
   return Math.abs(p.hp - r.hs) + Math.abs(p.ap - r.as) >= FAR_OFF_THRESHOLD
 }
 
-// ISO-8601 UTC ('...Z') timestamps compare correctly as strings.
+// Compare instants, not strings: Supabase returns kickoff_at in offset form
+// ('...+00:00'), which would mis-sort lexically against the 'Z'-suffixed constant.
 export function farOffApplies(kickoffAtISO: string): boolean {
-  return kickoffAtISO >= FAR_OFF_RULE_FROM
+  return new Date(kickoffAtISO).getTime() >= Date.parse(FAR_OFF_RULE_FROM)
 }
 
 const sign = (n: number) => (n > 0 ? 1 : n < 0 ? -1 : 0)
