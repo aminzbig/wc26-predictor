@@ -7,19 +7,16 @@ const DIM: Record<'sm' | 'md' | 'lg', string> = {
   lg: 'w-[56px] h-[56px]',
 }
 
-export function Avatar({ url, code, label, size = 'md', px, rainbow }: {
+export function Avatar({ url, code, label, size = 'md', px }: {
   url?: string | null
   code?: string | null
   label?: string | null
   size?: 'sm' | 'md' | 'lg'
   px?: number // exact pixel size; overrides `size` when set
-  rainbow?: boolean // animated rainbow ring instead of the ink ring (booster)
 }) {
   const dim = px ? '' : DIM[size]
   const style = px ? { width: px, height: px } : undefined
-  // Booster avatars swap the ink ring for the animated rainbow border; the face/flag
-  // sits inside (overflow-hidden), so only the 3px ring shows colour.
-  const ring = `border-[3px] rounded-full overflow-hidden inline-block flex-none ${rainbow ? 'booster-rainbow border-transparent' : 'border-ink'}`
+  const ring = 'border-[3px] border-ink rounded-full overflow-hidden inline-block flex-none'
 
   if (url) {
     return (
