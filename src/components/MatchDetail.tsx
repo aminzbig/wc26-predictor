@@ -5,15 +5,17 @@ import type { Match, Prediction, Lineup, SquadPlayer, WcRunGame } from '../lib/t
 import { matchState } from '../lib/matchState'
 import { supabase } from '../lib/supabase'
 import { rankLivePicks } from '../lib/livePicks'
+import { farOffApplies, isFarOff } from '../lib/scoring'
 import { GameInfo, FlagPanel, TeamNameBar, PointsStar, ScoreLine } from './matchFace'
 import { Avatar } from './Avatar'
 
 type PeoplePick = { id: string; name: string; flag_code: string | null; avatar_url: string | null; home_pred: number; away_pred: number; points: number | null }
 
 // How close a pick landed vs. the final score — mirrors the tiers in lib/scoring.ts.
-type Tier = 'exact' | 'diff' | 'outcome' | 'miss'
+type Tier = 'exact' | 'diff' | 'outcome' | 'miss' | 'faroff'
 const sgn = (n: number) => (n > 0 ? 1 : n < 0 ? -1 : 0)
-function resultTier(hp: number, ap: number, hs: number, as: number): Tier {
+function resultTier(hp: number, ap: number, hs: number, as: number, applyFarOff = false): Tier {
+  if (applyFarOff && isFarOff({ hp, ap }, { hs, as })) return 'faroff'
   if (hp === hs && ap === as) return 'exact'
   if (hp - ap === hs - as) return 'diff'
   if (sgn(hp - ap) === sgn(hs - as)) return 'outcome'
@@ -24,6 +26,7 @@ const TIER: Record<Tier, { label: string; cls: string }> = {
   diff:    { label: 'Goal diff',   cls: 'text-blue' },
   outcome: { label: 'Outcome',     cls: 'text-orange' },
   miss:    { label: 'Missed',      cls: 'text-ink/40' },
+  faroff:  { label: 'Too far off', cls: 'text-red' },
 }
 
 // Everyone's predictions for a match — only readable once it's locked/finished
@@ -80,17 +83,18 @@ function PicksBoard({ rows, match }: { rows: PeoplePick[]; match: Match }) {
   const hs = match.home_score ?? 0, as = match.away_score ?? 0
   const lh = match.live_home ?? 0, la = match.live_away ?? 0
   const topPoints = scored ? Math.max(0, ...rows.map(r => r.points ?? 0)) : 0
+  const applyFarOff = farOffApplies(match.kickoff_at)
 
   // LIVE: rank by projected points from the current live score.
   // FINISHED / pre-kickoff: existing behavior (rank by awarded points, or none).
   const ranked = live
-    ? rankLivePicks(rows, { home: lh, away: la }, match.multiplier ?? 1).map(r => ({
-        ...r, points: r.proj, tier: resultTier(r.home_pred, r.away_pred, lh, la),
+    ? rankLivePicks(rows, { home: lh, away: la }, match.multiplier ?? 1, applyFarOff).map(r => ({
+        ...r, points: r.proj, tier: resultTier(r.home_pred, r.away_pred, lh, la, applyFarOff),
       }))
     : rows.map((r) => {
         const pts = r.points ?? 0
         const rank = rows.filter(x => (x.points ?? 0) > pts).length + 1
-        return { ...r, rank, tier: scored ? resultTier(r.home_pred, r.away_pred, hs, as) : null }
+        return { ...r, rank, tier: scored ? resultTier(r.home_pred, r.away_pred, hs, as, applyFarOff) : null }
       })
 
   return (
@@ -661,9 +665,19 @@ export function MatchDetail({ match, prediction, onSave, onClose }: {
 
             {/* Points earned */}
             {state === 'finished' && prediction?.points_awarded != null && (
-              <div className="mt-2 inline-block bg-ink text-yellow font-display text-[16px] uppercase tracking-wide px-3 py-1.5">
-                +{prediction.points_awarded} points
-              </div>
+              farOffApplies(match.kickoff_at)
+                && isFarOff(
+                  { hp: prediction.home_pred, ap: prediction.away_pred },
+                  { hs: match.home_score ?? 0, as: match.away_score ?? 0 },
+                ) ? (
+                <div className="mt-2 inline-block bg-ink text-red font-display text-[16px] uppercase tracking-wide px-3 py-1.5">
+                  Too far off — 0 pts
+                </div>
+              ) : (
+                <div className="mt-2 inline-block bg-ink text-yellow font-display text-[16px] uppercase tracking-wide px-3 py-1.5">
+                  +{prediction.points_awarded} points
+                </div>
+              )
             )}
 
             {/* Everyone's picks — revealed once the match locks at kickoff (state !== 'open') */}
