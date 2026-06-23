@@ -75,12 +75,13 @@ export function MatchCard({ match, prediction, onSave, onOpen, boosterActive, bo
             ? <TopThreePredictors match={match} boosted={!!boosterActive} />
             : (
               <>
-                <span className="font-sans font-900 text-[10px] uppercase tracking-widest flex items-center gap-1">
-                  {state === 'open' && '★ OPEN'}
-                  {state === 'locked' && (live
-                    ? <>● LIVE{match.live_minute ? ` ${match.live_minute}'` : ''}</>
-                    : <><Lock size={10} />LOCKED</>)}
-                </span>
+                {state === 'locked' && (
+                  <span className="font-sans font-900 text-[10px] uppercase tracking-widest flex items-center gap-1">
+                    {live
+                      ? <>● LIVE{match.live_minute ? ` ${match.live_minute}'` : ''}</>
+                      : <><Lock size={10} />LOCKED</>}
+                  </span>
+                )}
                 {boosterState && <BoosterBadge state={boosterState} px={48} onClick={badgeOnClick} />}
               </>
             )}
