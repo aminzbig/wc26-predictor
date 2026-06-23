@@ -20,6 +20,7 @@ export function MatchCard({ match, prediction, onSave, onOpen, boosterActive, bo
   const state = matchState(match)
   const [hp, setHp] = useState(prediction?.home_pred ?? 0)
   const [ap, setAp] = useState(prediction?.away_pred ?? 0)
+  const [touched, setTouched] = useState(false)
   const [saving, setSaving] = useState(false)
   const editable = state === 'open'
   const live = state === 'locked' && match.live_home != null // in progress with a known score
@@ -32,16 +33,19 @@ export function MatchCard({ match, prediction, onSave, onOpen, boosterActive, bo
   }, [prediction?.home_pred, prediction?.away_pred])
 
   // Auto-save: debounce edits and persist them — no explicit "Lock prediction" button.
-  const savedH = prediction?.home_pred ?? 0, savedA = prediction?.away_pred ?? 0
+  // Baseline is null (not 0) when there's no saved prediction, so a deliberate 0-0
+  // pick still differs from "untouched" and saves. `touched` gates out the mount pass
+  // so we never persist the default 0-0 the user never actually entered.
+  const savedH = prediction?.home_pred ?? null, savedA = prediction?.away_pred ?? null
   useEffect(() => {
-    if (!editable) return
+    if (!editable || !touched) return
     if (hp === savedH && ap === savedA) return
     const t = setTimeout(async () => {
       setSaving(true)
       try { await onSave(hp, ap) } finally { setSaving(false) }
     }, 700)
     return () => clearTimeout(t)
-  }, [hp, ap, editable, savedH, savedA]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [hp, ap, editable, touched, savedH, savedA]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // The giant flag numbers are the player's PREDICTION (editable while open); the
   // real/live score lives on the card background so it reads "your pick vs reality".
@@ -90,9 +94,9 @@ export function MatchCard({ match, prediction, onSave, onOpen, boosterActive, bo
 
       {/* Flags + giant prediction numbers, full-bleed with a center divider */}
       <div className="relative flex-1 min-h-0 flex items-stretch border-t-[3px] border-ink">
-        <FlagPanel code={match.home_code} label={match.home_label} value={homeNum} editable={editable} onChange={setHp} />
+        <FlagPanel code={match.home_code} label={match.home_label} value={homeNum} editable={editable} onChange={n => { setHp(n); setTouched(true) }} />
         <div className="w-[3px] bg-ink self-stretch flex-none" />
-        <FlagPanel code={match.away_code} label={match.away_label} value={awayNum} editable={editable} onChange={setAp} />
+        <FlagPanel code={match.away_code} label={match.away_label} value={awayNum} editable={editable} onChange={n => { setAp(n); setTouched(true) }} />
       </div>
 
       {/* Points star — centered on the whole card (not just the flags area) */}

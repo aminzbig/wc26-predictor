@@ -1,4 +1,5 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent, act } from '@testing-library/react'
+import { vi } from 'vitest'
 import { MatchCard } from './MatchCard'
 import type { Match } from '../lib/types'
 
@@ -14,6 +15,22 @@ test('open match shows editable score inputs (auto-saves, no lock button)', () =
   expect(screen.getByLabelText(/Brazil predicted score/i)).toBeInTheDocument()
   expect(screen.getByLabelText(/Croatia predicted score/i)).toBeInTheDocument()
 })
+test('entering a fresh 0-0 prediction auto-saves it', async () => {
+  vi.useFakeTimers()
+  try {
+    const onSave = vi.fn(async () => {})
+    render(<MatchCard match={m} prediction={undefined} onSave={onSave} />)
+    // No prior prediction; the user deliberately picks 0-0. Clearing the field
+    // fires onChange(0) — the realistic way to commit a zero.
+    fireEvent.change(screen.getByLabelText(/Brazil predicted score/i), { target: { value: '' } })
+    fireEvent.change(screen.getByLabelText(/Croatia predicted score/i), { target: { value: '' } })
+    await act(async () => { vi.advanceTimersByTime(800) })
+    expect(onSave).toHaveBeenCalledWith(0, 0)
+  } finally {
+    vi.useRealTimers()
+  }
+})
+
 test('finished match shows the points star', () => {
   const fin: Match = { ...m, status: 'finished', home_score: 1, away_score: 1,
     kickoff_at: new Date(Date.now() - 3.6e6).toISOString() }

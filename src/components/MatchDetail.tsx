@@ -509,6 +509,7 @@ export function MatchDetail({ match, prediction, onSave, onClose }: {
   const live = state === 'locked' && match.live_home != null // in progress with a known score
   const [hp, setHp] = useState(prediction?.home_pred ?? 0)
   const [ap, setAp] = useState(prediction?.away_pred ?? 0)
+  const [touched, setTouched] = useState(false)
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
@@ -524,16 +525,19 @@ export function MatchDetail({ match, prediction, onSave, onClose }: {
   }, [prediction?.home_pred, prediction?.away_pred])
 
   // Auto-save: debounce edits and persist them — no explicit "Update prediction" button.
-  const savedH = prediction?.home_pred ?? 0, savedA = prediction?.away_pred ?? 0
+  // Baseline is null (not 0) when there's no saved prediction, so a deliberate 0-0
+  // pick still differs from "untouched" and saves. `touched` gates out the mount pass
+  // so we never persist the default 0-0 the user never actually entered.
+  const savedH = prediction?.home_pred ?? null, savedA = prediction?.away_pred ?? null
   useEffect(() => {
-    if (!editable) return
+    if (!editable || !touched) return
     if (hp === savedH && ap === savedA) return
     const t = setTimeout(async () => {
       setSaving(true)
       try { await onSave(hp, ap) } finally { setSaving(false) }
     }, 700)
     return () => clearTimeout(t)
-  }, [hp, ap, editable, savedH, savedA]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [hp, ap, editable, touched, savedH, savedA]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const mult = match.multiplier ?? 1
   const finished = state === 'finished'
@@ -595,8 +599,8 @@ export function MatchDetail({ match, prediction, onSave, onClose }: {
 
             {/* Flags + giant prediction numbers + rainbow points star */}
             <div className="relative flex items-stretch gap-2 h-[clamp(200px,calc(var(--app-vh)*0.34),280px)]">
-              <FlagPanel code={match.home_code} label={match.home_label} value={homeNum} editable={editable} onChange={setHp} />
-              <FlagPanel code={match.away_code} label={match.away_label} value={awayNum} editable={editable} onChange={setAp} />
+              <FlagPanel code={match.home_code} label={match.home_label} value={homeNum} editable={editable} onChange={n => { setHp(n); setTouched(true) }} />
+              <FlagPanel code={match.away_code} label={match.away_label} value={awayNum} editable={editable} onChange={n => { setAp(n); setTouched(true) }} />
               {points != null && (
                 <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[40%] aspect-square z-10">
                   <PointsStar points={points} multiplier={match.multiplier} />
