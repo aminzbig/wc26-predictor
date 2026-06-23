@@ -4,12 +4,33 @@
 create table if not exists boosters (
   player_id  uuid not null references players(id) on delete cascade,
   match_id   uuid not null references matches(id) on delete cascade,
-  stage      text not null,
+  stage      text not null check (stage in ('group','r32','r16','qf','sf','third','final')),
   created_at timestamptz not null default now(),
   primary key (player_id, match_id),
   unique (player_id, stage)
 );
 create index if not exists boosters_match_idx on boosters (match_id);
+
+-- Stage is server-authoritative: a BEFORE INSERT trigger overwrites whatever the
+-- client sent with the match's real stage, so a crafted client cannot mislabel a
+-- booster's round to dodge the unique(player_id, stage) one-per-round rule. (The
+-- RLS insert policy can't reliably compare the new row's stage to the match inside
+-- its subquery — an unqualified `stage` there binds to matches.stage — so we pin
+-- it here instead. Constraints, including unique(player_id, stage), are evaluated
+-- after BEFORE triggers, so they see the authoritative value.)
+create or replace function set_booster_stage()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  select stage into new.stage from matches where id = new.match_id;
+  if new.stage is null then
+    raise exception 'booster references unknown match %', new.match_id;
+  end if;
+  return new;
+end; $$;
+
+drop trigger if exists boosters_set_stage on boosters;
+create trigger boosters_set_stage before insert on boosters
+  for each row execute function set_booster_stage();
 
 alter table boosters enable row level security;
 
@@ -25,7 +46,6 @@ create policy boosters_insert_self on boosters for insert to authenticated
   with check (
     player_id = auth.uid()
     and exists (select 1 from matches m where m.id = match_id
-                and m.stage = stage
                 and m.status = 'scheduled' and m.kickoff_at > now())
   );
 
