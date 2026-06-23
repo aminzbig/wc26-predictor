@@ -149,3 +149,33 @@ input[type='number'] { -moz-appearance: textfield; appearance: textfield; paddin
 @media (prefers-reduced-motion: reduce) {
   .booster-rainbow, .booster-ring { animation: none; }
 }
+
+/* Booster "shine": a glint sweeps across the available (tappable) badge every few
+   seconds — a periodic affordance that the rocket circle is a button. The sweep
+   happens in the first ~16% of the cycle, then idles, so it plays only "sometimes". */
+.booster-shine {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  overflow: hidden;
+  pointer-events: none;
+}
+.booster-shine::before {
+  content: '';
+  position: absolute;
+  top: -30%;
+  left: 0;
+  width: 42%;
+  height: 160%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.78), transparent);
+  transform: translateX(-180%) skewX(-18deg);
+  animation: booster-shine 4.2s ease-in-out infinite;
+}
+@keyframes booster-shine {
+  0%   { transform: translateX(-180%) skewX(-18deg); }
+  16%  { transform: translateX(300%) skewX(-18deg); }
+  100% { transform: translateX(300%) skewX(-18deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .booster-shine::before { animation: none; }
+}
