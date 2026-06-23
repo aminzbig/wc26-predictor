@@ -38,17 +38,15 @@ Add the shared constants and the guard, wired into `basePoints` and `projectedPo
   - `basePoints(p, r, pts?, risky?, applyFarOff?: boolean)` — new optional 5th param, default `false`. When `true` and `isFarOff(p, r)`, returns `0` before summing.
   - `projectedPoints(p, r, multiplier?, boost?, applyFarOff?: boolean)` — new optional 5th param, default `false`, passed through to `basePoints`.
 
-- [ ] **Step 1: Write failing tests** — append to `src/lib/scoring.test.ts`:
+- [ ] **Step 1: Write failing tests** — in `src/lib/scoring.test.ts`, FIRST extend the existing top-of-file import (do NOT add a second `import` — `basePoints`/`projectedPoints` are already imported there; a duplicate binding is a compile error). Replace the existing line `import { basePoints, projectedPoints } from './scoring'` with:
 
 ```typescript
-import {
-  basePoints,
-  projectedPoints,
-  isFarOff,
-  farOffApplies,
-  FAR_OFF_RULE_FROM,
-} from './scoring'
+import { basePoints, projectedPoints, isFarOff, farOffApplies, FAR_OFF_RULE_FROM } from './scoring'
+```
 
+Then append the new describe block at the end of the file:
+
+```typescript
 describe('far-off rule', () => {
   test('isFarOff: total goal error >= 5 is far off', () => {
     expect(isFarOff({ hp: 5, ap: 1 }, { hs: 1, as: 0 })).toBe(true)   // dist 5
