@@ -38,6 +38,9 @@ export interface Prediction {
   id: string; player_id: string; match_id: string
   home_pred: number; away_pred: number; points_awarded: number | null
 }
+export interface Booster {
+  player_id: string; match_id: string; stage: Stage; created_at: string
+}
 export interface LeaderRow {
   id: string; name: string; flag_code: string | null; avatar_url: string | null
   total: number; exact_hits: number; diff_hits: number; admin_deltas: number[] | null
