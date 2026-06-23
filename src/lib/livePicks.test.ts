@@ -35,3 +35,24 @@ describe('rankLivePicks', () => {
     expect(out[0].proj).toBe(90)
   })
 })
+
+const farOffRows = [
+  { home_pred: 5, away_pred: 1, name: 'Bold' },   // vs live 1-0: dist 5 -> far off
+  { home_pred: 2, away_pred: 1, name: 'Safe' },   // vs live 1-0: dist 1 -> outcome+goalDiff = 15
+]
+
+describe('rankLivePicks far-off', () => {
+  test('rule off: far-off bold pick still scores its outcome points', () => {
+    const out = rankLivePicks(farOffRows, { home: 1, away: 0 }, 1, false)
+    expect(out.find(r => r.name === 'Bold')!.proj).toBe(10)
+  })
+  test('rule on: far-off bold pick projects 0 and ranks below the safe pick', () => {
+    const out = rankLivePicks(farOffRows, { home: 1, away: 0 }, 1, true)
+    const bold = out.find(r => r.name === 'Bold')!
+    const safe = out.find(r => r.name === 'Safe')!
+    expect(bold.proj).toBe(0)
+    expect(safe.proj).toBe(15)
+    expect(safe.rank).toBe(1)
+    expect(bold.rank).toBe(2)
+  })
+})
