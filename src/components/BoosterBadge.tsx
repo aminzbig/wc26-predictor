@@ -1,25 +1,24 @@
-import type { CSSProperties } from 'react'
+import { Avatar } from './Avatar'
+import { useAuth } from '../context/AuthContext'
 
-// Circular "2×" booster badge, sized to sit either next to the OPEN label
-// (small) or in place of a top-3 avatar on a finished card (px=56).
-//  • available — solid ink, tappable → set the booster here
-//  • active    — rainbow ring; tappable (onClick) to remove, or a static
-//                indicator when onClick is omitted (locked / finished card)
+// The booster control is the current player's face in a big outline circle —
+// the same look as the top-3 predictor avatars above a finished card. Tapping it
+// sets/removes the booster; when active the ring becomes an animated rainbow.
+//  • available — your avatar, ink ring, tappable → set the booster here
+//  • active    — your avatar, rainbow ring; tappable to remove (or a static
+//                indicator when onClick is omitted: locked / finished card)
 //  • disabled  — 20% opacity, untappable (booster already used this round)
-export function BoosterBadge({ state, px = 30, onClick }: {
+export function BoosterBadge({ state, px = 56, onClick }: {
   state: 'available' | 'active' | 'disabled'
   px?: number
   onClick?: () => void
 }) {
+  const { player } = useAuth()
   const interactive = state !== 'disabled' && !!onClick
-  const rainbow = state === 'active'
   const label =
     state === 'disabled' ? 'Booster already used this round'
       : state === 'active' ? (onClick ? 'Remove booster' : 'Booster active — points doubled')
         : 'Use booster (double points)'
-
-  const style: CSSProperties = { width: px, height: px }
-  if (rainbow) (style as Record<string, string>)['--card-bg'] = '#141210'
 
   return (
     <button
@@ -29,15 +28,13 @@ export function BoosterBadge({ state, px = 30, onClick }: {
       aria-pressed={state === 'active'}
       onPointerDown={e => e.stopPropagation()}
       onClick={e => { e.stopPropagation(); if (interactive) onClick!() }}
-      style={style}
       className={[
-        'grid place-items-center rounded-full bg-ink text-paper font-display leading-none select-none border-[3px]',
-        rainbow ? 'booster-rainbow border-transparent' : 'border-ink',
+        'block rounded-full select-none',
         state === 'disabled' ? 'opacity-20 pointer-events-none' : '',
         interactive ? 'cursor-pointer' : 'cursor-default',
       ].join(' ')}
     >
-      <span style={{ fontSize: Math.round(px * 0.42) }}>2×</span>
+      <Avatar url={player?.avatar_url} code={player?.flag_code} label={player?.name} px={px} rainbow={state === 'active'} />
     </button>
   )
 }

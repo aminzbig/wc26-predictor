@@ -80,7 +80,7 @@ export function MatchCard({ match, prediction, onSave, onOpen, boosterActive, bo
                     ? <>● LIVE{match.live_minute ? ` ${match.live_minute}'` : ''}</>
                     : <><Lock size={10} />LOCKED</>)}
                 </span>
-                {boosterState && <BoosterBadge state={boosterState} px={30} onClick={badgeOnClick} />}
+                {boosterState && <BoosterBadge state={boosterState} px={48} onClick={badgeOnClick} />}
               </>
             )}
         </div>
