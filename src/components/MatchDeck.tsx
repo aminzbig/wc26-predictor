@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-import type { Match, Prediction } from '../lib/types'
+import type { Match, Prediction, Stage } from '../lib/types'
 import { MatchCard } from './MatchCard'
 
 const spring = { type: 'spring' as const, stiffness: 300, damping: 30 }
@@ -10,13 +10,17 @@ const spring = { type: 'spring' as const, stiffness: 300, damping: 30 }
 // stacking up toward the top bar.
 const CARD_POS = 'absolute inset-x-0 bottom-0 top-[clamp(40px,calc(var(--app-vh)*0.065),62px)]'
 
-export function MatchDeck({ matches, index, setIndex, byMatch, onSave, onOpen }: {
+export function MatchDeck({ matches, index, setIndex, byMatch, onSave, onOpen, boostByMatch, usedStages, setBooster, clearBooster }: {
   matches: Match[]
   index: number
   setIndex: (n: number) => void
   byMatch: Record<string, Prediction>
   onSave: (matchId: string, h: number, a: number) => Promise<void>
   onOpen: (m: Match) => void
+  boostByMatch: Record<string, { match_id: string; stage: Stage }>
+  usedStages: Set<Stage>
+  setBooster: (matchId: string, stage: Stage) => Promise<void>
+  clearBooster: (matchId: string) => Promise<void>
 }) {
   // direction: +1 means moving forward (next), -1 backward (prev)
   const [dir, setDir] = useState(0)
@@ -54,14 +58,14 @@ export function MatchDeck({ matches, index, setIndex, byMatch, onSave, onOpen }:
         {peek2 && (
           <div aria-hidden className={`${CARD_POS} z-[1] pointer-events-none`}
             style={{ transform: 'translateY(clamp(-56px, calc(var(--app-vh) * -0.062), -32px)) scale(0.90)', transformOrigin: 'top center', opacity: 0.4 }}>
-            <MatchCard match={peek2} prediction={byMatch[peek2.id]} onSave={async () => {}} />
+            <MatchCard match={peek2} prediction={byMatch[peek2.id]} onSave={async () => {}} boosterActive={!!boostByMatch[peek2.id]} />
           </div>
         )}
         {/* Nearer peek (above, a bit smaller) */}
         {peek1 && (
           <div aria-hidden className={`${CARD_POS} z-[2] pointer-events-none`}
             style={{ transform: 'translateY(clamp(-29px, calc(var(--app-vh) * -0.032), -16px)) scale(0.95)', transformOrigin: 'top center', opacity: 0.7 }}>
-            <MatchCard match={peek1} prediction={byMatch[peek1.id]} onSave={async () => {}} />
+            <MatchCard match={peek1} prediction={byMatch[peek1.id]} onSave={async () => {}} boosterActive={!!boostByMatch[peek1.id]} />
           </div>
         )}
 
@@ -93,6 +97,9 @@ export function MatchDeck({ matches, index, setIndex, byMatch, onSave, onOpen }:
               prediction={byMatch[active.id]}
               onSave={(h, a) => onSave(active.id, h, a)}
               onOpen={() => { if (!dragged.current) onOpen(active) }}
+              boosterActive={!!boostByMatch[active.id]}
+              boosterRoundUsed={usedStages.has(active.stage) && !boostByMatch[active.id]}
+              onToggleBooster={() => { if (boostByMatch[active.id]) clearBooster(active.id); else setBooster(active.id, active.stage) }}
             />
           </motion.div>
         </AnimatePresence>

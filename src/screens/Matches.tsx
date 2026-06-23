@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useMatches } from '../hooks/useMatches'
 import { usePredictions } from '../hooks/usePredictions'
+import { useBoosters } from '../hooks/useBoosters'
 import { MatchDeck } from '../components/MatchDeck'
 import { MatchGrid } from '../components/MatchGrid'
 import { MatchDetail } from '../components/MatchDetail'
@@ -30,6 +31,7 @@ function initialFocus(list: Match[]) {
 export function Matches() {
   const { matches, loading } = useMatches()
   const { byMatch, save } = usePredictions()
+  const { byMatch: boostByMatch, usedStages, setBooster, clearBooster } = useBoosters()
   const [view, setView] = useState<View>('deck')
   const [index, setIndex] = useState(-1)
   const [selected, setSelected] = useState<Match | null>(null)
@@ -91,6 +93,10 @@ export function Matches() {
                   byMatch={byMatch}
                   onSave={save}
                   onOpen={setSelected}
+                  boostByMatch={boostByMatch}
+                  usedStages={usedStages}
+                  setBooster={setBooster}
+                  clearBooster={clearBooster}
                 />
               )}
         </div>
