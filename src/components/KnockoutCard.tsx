@@ -8,7 +8,9 @@ function SlotRow({ slot, score, isWinner }:
   { slot: BracketSlot; score: number | null; isWinner: boolean }) {
   return (
     <div className={`flex items-center gap-2 px-2 py-1.5 ${isWinner ? 'bg-green' : ''}`}>
-      <Flag code={slot.code} size="sm" />
+      {/* Empty label → a clean blank box for a TBD slot (the label shows once in the
+          name span beside it), instead of Flag's default '?' placeholder. */}
+      <Flag code={slot.code} label="" size="sm" />
       <span className="flex-1 min-w-0 truncate font-display text-[15px] uppercase">
         {slot.name ?? slot.label}
       </span>
