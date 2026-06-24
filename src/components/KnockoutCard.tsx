@@ -15,8 +15,10 @@ function kickoffLine(iso: string): string {
 function SlotRow({ slot, score, isWinner }:
   { slot: BracketSlot; score: number | null; isWinner: boolean }) {
   const resolved = !!slot.code
+  // A projected (not-yet-confirmed) team is dimmed to read as tentative.
+  const projected = resolved && !slot.confirmed
   return (
-    <div className="flex items-center gap-2 min-w-0">
+    <div className={`flex items-center gap-2 min-w-0 ${projected ? 'opacity-45' : ''}`}>
       {resolved
         ? <Flag code={slot.code} label="" size="sm" />
         : <Shield size={22} className="flex-none text-ink/30" aria-hidden />}

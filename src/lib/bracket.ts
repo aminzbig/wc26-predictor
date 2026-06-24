@@ -5,6 +5,9 @@ export interface BracketSlot {
   code: string | null
   name: string | null
   label: string // raw seed label, e.g. '2A', '3A/B/C/D/F', 'W74'
+  // True when the team is locked in (group finished, or an actual match winner);
+  // false when it's only a live projection that could still change.
+  confirmed: boolean
 }
 
 export interface BracketMatch {
@@ -116,14 +119,28 @@ export function resolveBracket(matches: Match[]): BracketMatch[] {
   const groupLabels = new Set(groupMatches.map(m => m.group_label!))
   const allGroupsActive = groupLabels.size > 0 && [...groupLabels].every(groupActive)
 
-  // Placement slots ('1A','2A','3A'…) projected from any group that's underway.
-  const placement = new Map<string, TeamRef>()
+  // A group is "complete" (positions locked) once all its matches are finished.
+  // Placements from a complete group are confirmed; from an in-progress one they
+  // are only a live projection (shown dimmed).
+  const finished = new Map<string, boolean>()
+  for (const m of groupMatches) {
+    const prev = finished.get(m.group_label!)
+    const f = m.status === 'finished'
+    finished.set(m.group_label!, prev === undefined ? f : prev && f)
+  }
+  const groupComplete = (label: string) => finished.get(label) === true
+  const allGroupsComplete = groupLabels.size > 0 && [...groupLabels].every(groupComplete)
+
+  // Placement slots ('1A','2A','3A'…) projected from any group that's underway,
+  // flagged confirmed only once that group is mathematically done.
+  const placement = new Map<string, TeamRef & { confirmed: boolean }>()
   for (const grp of standings) {
     if (!groupActive(grp.label)) continue
     const letter = byLetter(grp.label)
+    const confirmed = groupComplete(grp.label)
     ;[0, 1, 2].forEach(i => {
       const r = grp.rows[i]
-      if (r) placement.set(`${i + 1}${letter}`, { code: r.code, name: r.name })
+      if (r) placement.set(`${i + 1}${letter}`, { code: r.code, name: r.name, confirmed })
     })
   }
 
@@ -157,14 +174,20 @@ export function resolveBracket(matches: Match[]): BracketMatch[] {
 
   const resolveSlot = (label: string | null): BracketSlot => {
     const raw = label ?? ''
-    const slot = (ref: TeamRef | null): BracketSlot => ({ code: ref?.code ?? null, name: ref?.name ?? null, label: raw })
-    if (/^[12][A-L]$/.test(raw)) return slot(placement.get(raw) ?? null)
-    if (/^3/.test(raw)) return slot(thirdMap.get(raw) ?? null)
+    const slot = (ref: TeamRef | null, confirmed: boolean): BracketSlot =>
+      ({ code: ref?.code ?? null, name: ref?.name ?? null, label: raw, confirmed: ref ? confirmed : false })
+    if (/^[12][A-L]$/.test(raw)) {
+      const p = placement.get(raw) ?? null
+      return slot(p, p?.confirmed ?? false)
+    }
+    // Third-place teams are confirmed only once every group has finished.
+    if (/^3/.test(raw)) return slot(thirdMap.get(raw) ?? null, allGroupsComplete)
+    // Knockout winners/losers come from an actually-finished game → always confirmed.
     const w = raw.match(/^W(\d+)$/)
-    if (w) return slot(resultByNo.get(+w[1])?.winner ?? null)
+    if (w) return slot(resultByNo.get(+w[1])?.winner ?? null, true)
     const l = raw.match(/^L(\d+)$/)
-    if (l) return slot(resultByNo.get(+l[1])?.loser ?? null)
-    return slot(null)
+    if (l) return slot(resultByNo.get(+l[1])?.loser ?? null, true)
+    return slot(null, false)
   }
 
   return ko.map(m => {
