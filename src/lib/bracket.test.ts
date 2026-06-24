@@ -81,13 +81,23 @@ describe('resolveBracket', () => {
     expect(m.away).toMatchObject({ code: 'ar', label: '2B' }) // Group B runner-up
   })
 
-  test('leaves a slot TBD (null code, raw label) while its group is unfinished', () => {
+  test('leaves a slot TBD while its group has not played any matches', () => {
     const out = resolveBracket([
-      g('Group A', 'mx', 'za', 2, 0), // group A not complete
+      // scheduled, no score → Group A is not underway yet
+      mk({ stage: 'group', group_label: 'Group A', home_code: 'mx', away_code: 'za', home_label: 'Mexico', away_label: 'ZA' }),
       mk({ match_no: 73, stage: 'r32', home_label: '1A', away_label: '2B', multiplier: 1.5 }),
     ])
     const m = out.find(b => b.match_no === 73)!
     expect(m.home).toMatchObject({ code: null, label: '1A' })
+  })
+
+  test('projects the provisional group leader from a partial table (Google-style)', () => {
+    const out = resolveBracket([
+      g('Group A', 'mx', 'za', 2, 0), // one finished match → Group A is underway
+      mk({ match_no: 73, stage: 'r32', home_label: '1A', away_label: '2B', multiplier: 1.5 }),
+    ])
+    const m = out.find(b => b.match_no === 73)!
+    expect(m.home).toMatchObject({ code: 'mx', label: '1A' }) // mx leads provisionally
   })
 
   test('resolves W/L from a finished knockout game decided on penalties', () => {

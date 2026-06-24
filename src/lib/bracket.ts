@@ -100,35 +100,26 @@ function decideMatch(home: BracketSlot, away: BracketSlot, m: Match):
 export function resolveBracket(matches: Match[]): BracketMatch[] {
   const standings = computeStandings(matches)
 
-  // Which groups have every match finished?
-  // A group is complete when ALL seen matches are finished, at least 3 distinct
-  // teams are present (guards against partial/sparse data), and the match count
-  // is sufficient for a full round-robin (count >= n*(n-1)/2 for n teams).
+  // Google-style live projection: a group's positions fill from its CURRENT
+  // (provisional) standings as soon as the group has any played result — we don't
+  // wait for the group to be mathematically decided. `computeStandings` already
+  // folds in live in-progress scores, so the bracket tracks the table in real time.
+  // A group is "active" once at least one of its matches has a played score.
   const groupMatches = matches.filter(m => m.stage === 'group' && m.group_label)
-  const groupInfo = new Map<string, { allFinished: boolean; count: number; teams: Set<string> }>()
+  const played = new Set<string>() // group labels with ≥1 played match
   for (const m of groupMatches) {
-    const gl = m.group_label!
-    let info = groupInfo.get(gl)
-    if (!info) { info = { allFinished: true, count: 0, teams: new Set() }; groupInfo.set(gl, info) }
-    info.count++
-    info.allFinished = info.allFinished && m.status === 'finished'
-    if (m.home_code) info.teams.add(m.home_code)
-    if (m.away_code) info.teams.add(m.away_code)
+    const hasScore = (m.status === 'finished' && m.home_score != null && m.away_score != null)
+      || (m.status !== 'finished' && m.live_home != null && m.live_away != null)
+    if (hasScore) played.add(m.group_label!)
   }
-  const groupDone = new Map<string, boolean>()
-  for (const [gl, info] of groupInfo) {
-    const n = info.teams.size
-    // Require ≥ 3 teams and at least one full single round-robin worth of matches.
-    const hasEnoughTeams = n >= 3
-    const hasEnoughMatches = info.count >= n * (n - 1) / 2
-    groupDone.set(gl, info.allFinished && hasEnoughTeams && hasEnoughMatches)
-  }
-  const allGroupsDone = groupMatches.length > 0 && [...groupDone.values()].every(Boolean)
+  const groupActive = (label: string) => played.has(label)
+  const groupLabels = new Set(groupMatches.map(m => m.group_label!))
+  const allGroupsActive = groupLabels.size > 0 && [...groupLabels].every(groupActive)
 
-  // Placement slots ('1A','2A','3A'…) for groups that are complete.
+  // Placement slots ('1A','2A','3A'…) projected from any group that's underway.
   const placement = new Map<string, TeamRef>()
   for (const grp of standings) {
-    if (!groupDone.get(grp.label)) continue
+    if (!groupActive(grp.label)) continue
     const letter = byLetter(grp.label)
     ;[0, 1, 2].forEach(i => {
       const r = grp.rows[i]
@@ -136,7 +127,8 @@ export function resolveBracket(matches: Match[]): BracketMatch[] {
     })
   }
 
-  // Third-place slot assignment — only once the whole group stage is complete.
+  // Third-place slot assignment — the cross-group "best 8 thirds" comparison is
+  // only meaningful once every group is underway, so we project it then.
   const thirdSlotLabels = new Set<string>()
   for (const m of matches) {
     if (m.stage === 'group') continue
@@ -144,7 +136,7 @@ export function resolveBracket(matches: Match[]): BracketMatch[] {
     if (m.away_label?.startsWith('3')) thirdSlotLabels.add(m.away_label)
   }
   let thirdMap = new Map<string, TeamRef>()
-  if (allGroupsDone && thirdSlotLabels.size > 0) {
+  if (allGroupsActive && thirdSlotLabels.size > 0) {
     const slots = [...thirdSlotLabels]
       .sort((a, b) => a.localeCompare(b))
       .map(label => ({ label, allowed: label.replace(/^3/, '').split('/').map(s => s.trim()) }))
