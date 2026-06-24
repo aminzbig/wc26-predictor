@@ -14,10 +14,10 @@ function bm(p: Partial<BracketMatch>): BracketMatch {
   }
 }
 
-test('shows the raw label for an unresolved (TBD) slot', () => {
+test('shows TBD for an unresolved slot', () => {
   render(<KnockoutCard match={bm({})} />)
-  expect(screen.getByText('1A')).toBeInTheDocument()
-  expect(screen.getByText('2B')).toBeInTheDocument()
+  // Both home and away are unresolved → two TBD rows.
+  expect(screen.getAllByText('TBD')).toHaveLength(2)
 })
 
 test('shows team names and a final score when resolved', () => {
@@ -38,5 +38,5 @@ test('shows the penalty line for a game decided on penalties', () => {
     away: { code: 'br', name: 'Brazil', label: '2B' },
     home_score: 1, away_score: 1, home_pens: 4, away_pens: 3, winnerCode: 'mx',
   })} />)
-  expect(screen.getByText(/penalties 4.?3/i)).toBeInTheDocument()
+  expect(screen.getByText(/pens 4.?3/i)).toBeInTheDocument()
 })
