@@ -15,6 +15,7 @@ export interface Match {
   multiplier: number; status: 'scheduled' | 'finished'
   prob_home: number | null; prob_draw: number | null; prob_away: number | null
   live_home?: number | null; live_away?: number | null; live_minute?: number | null; live_status?: string | null
+  home_pens?: number | null; away_pens?: number | null
   prediction?: { winner: string | null; comment: string | null; advice: string | null; percent: { home: string; draw: string; away: string } | null; goals: { home: number | null; away: number | null } | null } | null
   home_form?: { result: 'W' | 'D' | 'L'; score: string; opp: string; date?: string; comp?: string }[] | null
   away_form?: { result: 'W' | 'D' | 'L'; score: string; opp: string; date?: string; comp?: string }[] | null
