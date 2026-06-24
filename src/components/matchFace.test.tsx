@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react'
-import { TopThreePredictors } from './matchFace'
+import { TopThreePredictors, PensLine } from './matchFace'
 import type { Match } from '../lib/types'
 
 const finished: Match = {
@@ -17,4 +17,14 @@ test('boosted finished card renders the booster indicator', () => {
 test('non-boosted finished card renders no booster indicator', () => {
   render(<TopThreePredictors match={finished} />)
   expect(screen.queryByLabelText(/booster active/i)).toBeNull()
+})
+
+test('PensLine renders the penalty score when both are present', () => {
+  render(<PensLine home={4} away={3} />)
+  expect(screen.getByText(/penalties 4.?3/i)).toBeInTheDocument()
+})
+
+test('PensLine renders nothing without a penalty score', () => {
+  const { container } = render(<PensLine home={null} away={2} />)
+  expect(container).toBeEmptyDOMElement()
 })

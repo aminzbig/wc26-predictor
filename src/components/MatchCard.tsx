@@ -3,7 +3,7 @@ import { motion } from 'framer-motion'
 import { Lock } from 'lucide-react'
 import type { Match, Prediction } from '../lib/types'
 import { matchState } from '../lib/matchState'
-import { GameInfo, TopThreePredictors, FlagPanel, TeamNameBar, PointsStar, ScoreLine } from './matchFace'
+import { GameInfo, TopThreePredictors, FlagPanel, TeamNameBar, PointsStar, ScoreLine, PensLine } from './matchFace'
 import { BoosterBadge } from './BoosterBadge'
 
 // Panel color cycles deterministically by match_no so each card looks bold.
@@ -124,6 +124,7 @@ export function MatchCard({ match, prediction, onSave, onOpen, boosterActive, bo
           <div>
             <div className="font-sans font-900 text-[11px] uppercase tracking-widest opacity-80 leading-none">Full time</div>
             <ScoreLine home={match.home_score} away={match.away_score} className="text-[clamp(41px,calc(var(--app-vh)*0.084),67px)] mt-1" />
+            <PensLine home={match.home_pens} away={match.away_pens} className="text-[10px] mt-1" />
           </div>
         ) : state === 'open' ? (
           <div>
