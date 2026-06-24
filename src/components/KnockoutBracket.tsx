@@ -55,16 +55,17 @@ function Gutter({ leftCount }: { leftCount: number }) {
 
 // One round's column: a header, then `count` evenly-spaced slots. A slot with a
 // fixture renders a card; a slot without one (data not seeded) renders a faint
-// placeholder so the bracket keeps its shape.
-function Column({ title, count, cards }:
-  { title: string; count: number; cards: BracketMatch[] }) {
+// placeholder so the bracket keeps its shape. The final column also carries the
+// third-place play-off, tucked just below the (centred) final card.
+function Column({ title, count, cards, third }:
+  { title: string; count: number; cards: BracketMatch[]; third?: BracketMatch }) {
   return (
     <div className="flex-none flex flex-col" style={{ width: CARD_W }}>
       <div className="flex items-center font-display uppercase text-[13px] tracking-wide text-ink"
         style={{ height: HEADER_H }}>
         {title}
       </div>
-      <div className="flex flex-col justify-around" style={{ height: COL_H }}>
+      <div className="relative flex flex-col justify-around" style={{ height: COL_H }}>
         {Array.from({ length: count }).map((_, i) => (
           <div key={i} style={{ height: CARD_H }} className="flex">
             {cards[i]
@@ -72,6 +73,15 @@ function Column({ title, count, cards }:
               : <div className="h-full w-full border-[2px] border-dashed border-ink/15 rounded-md" />}
           </div>
         ))}
+        {third && (
+          <div className="absolute left-0 right-0 flex flex-col gap-1.5"
+            style={{ top: COL_H / 2 + CARD_H / 2 + 28 }}>
+            <div className="font-display uppercase text-[12px] tracking-wide text-ink/70">Third place</div>
+            <div style={{ height: CARD_H }} className="flex">
+              <KnockoutCard match={third} />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
@@ -99,21 +109,12 @@ export function KnockoutBracket({ matches }: { matches: Match[] }) {
       <div className="flex items-start" style={{ minWidth: 'max-content' }}>
         {ROUNDS.map((r, idx) => (
           <Fragment key={r.stage}>
-            <Column title={r.title} count={r.count} cards={byStage[r.stage] ?? []} />
+            <Column title={r.title} count={r.count} cards={byStage[r.stage] ?? []}
+              third={r.stage === 'final' ? third : undefined} />
             {idx < ROUNDS.length - 1 && <Gutter leftCount={r.count} />}
           </Fragment>
         ))}
       </div>
-
-      {/* Third-place play-off — a standalone fixture, not part of the main tree. */}
-      {third && (
-        <div className="mt-5 flex flex-col gap-1.5" style={{ width: CARD_W }}>
-          <div className="font-display uppercase text-[13px] tracking-wide text-ink">Third place</div>
-          <div style={{ height: CARD_H }} className="flex">
-            <KnockoutCard match={third} />
-          </div>
-        </div>
-      )}
     </div>
   )
 }
