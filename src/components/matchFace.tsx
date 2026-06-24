@@ -258,6 +258,18 @@ export function ScoreLine({ home, away, className = '' }: { home: number | null 
   )
 }
 
+// Google-style "Penalties 4–1" line, shown small beneath the full-time score on a
+// knockout game decided on penalties. Renders nothing unless both scores are present.
+export function PensLine({ home, away, className = '' }:
+  { home: number | null | undefined; away: number | null | undefined; className?: string }) {
+  if (home == null || away == null) return null
+  return (
+    <div className={`font-sans font-900 uppercase tracking-widest opacity-80 ${className}`}>
+      Penalties {home}–{away}
+    </div>
+  )
+}
+
 // Exact 8-point star from the Figma asset ("Star Background [RAINBOW]"), upright.
 const STAR_PATH = 'M100.012 1.89155C101.577 -0.630517 105.246 -0.630518 106.811 1.89155L128.472 36.8129C129.377 38.2719 131.112 38.9907 132.784 38.5989L172.793 29.2225C175.683 28.5453 178.278 31.1401 177.6 34.0296L168.224 74.0394C167.832 75.7111 168.551 77.4463 170.01 78.3513L204.931 100.012C207.453 101.577 207.453 105.246 204.931 106.811L170.01 128.472C168.551 129.377 167.832 131.112 168.224 132.784L177.6 172.793C178.278 175.683 175.683 178.278 172.793 177.6L132.784 168.224C131.112 167.832 129.377 168.551 128.472 170.01L106.811 204.931C105.246 207.453 101.577 207.453 100.012 204.931L78.3513 170.01C77.4463 168.551 75.7111 167.832 74.0394 168.224L34.0296 177.6C31.1401 178.278 28.5453 175.683 29.2225 172.793L38.5989 132.784C38.9907 131.112 38.2719 129.377 36.8129 128.472L1.89155 106.811C-0.630517 105.246 -0.630518 101.577 1.89155 100.012L36.8129 78.3513C38.2719 77.4463 38.9907 75.7111 38.5989 74.0394L29.2225 34.0296C28.5453 31.1401 31.1401 28.5453 34.0296 29.2225L74.0394 38.5989C75.7111 38.9907 77.4463 38.2719 78.3513 36.8129L100.012 1.89155Z'
 

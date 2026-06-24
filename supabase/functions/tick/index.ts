@@ -114,9 +114,12 @@ Deno.serve(async (req) => {
         const short = f.fixture.status?.short
         if (FT_SHORT.has(short)) {
           const hg = f.goals?.home, ag = f.goals?.away
+          // Penalty shoot-out score (only present when the game was decided on pens).
+          const pen_h = f.score?.penalty?.home ?? null
+          const pen_a = f.score?.penalty?.away ?? null
           if (hg != null && ag != null) {
             await db.from('matches')
-              .update({ home_score: hg, away_score: ag, live_home: null, live_away: null, live_minute: null, live_status: null })
+              .update({ home_score: hg, away_score: ag, home_pens: pen_h, away_pens: pen_a, live_home: null, live_away: null, live_minute: null, live_status: null })
               .eq('id', m.id)
             const { error: e } = await db.rpc('recompute_match', { p_match: m.id }) // sets status='finished' + awards points
             if (e) console.error('recompute', m.id, e.message); else scored++
