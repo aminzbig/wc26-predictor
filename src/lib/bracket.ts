@@ -207,3 +207,27 @@ export function resolveBracket(matches: Match[]): BracketMatch[] {
     }
   })
 }
+
+// Enrich knockout matches with the teams projected from live standings, so the
+// Matches deck/grid/detail show the same countries as the Standings bracket
+// instead of bare seed labels ("1A", "W74"). Group matches pass through
+// unchanged. For a knockout slot we only fill from the projection when the DB
+// has no team yet (home_code == null) — a real, assigned team always wins. The
+// projection covers ALL rounds: R32 fills from group standings; R16/QF/SF/Final
+// fill from W{n}/L{n} once the earlier-round results are in. An unresolved slot
+// keeps its seed label so the card still reads "1A vs 2B".
+export function projectMatchTeams(matches: Match[]): Match[] {
+  const byId = new Map(resolveBracket(matches).map(b => [b.id, b]))
+  return matches.map(m => {
+    if (m.stage === 'group') return m
+    const b = byId.get(m.id)
+    if (!b) return m
+    return {
+      ...m,
+      home_code: m.home_code ?? b.home.code,
+      home_label: m.home_code ? m.home_label : (b.home.name ?? m.home_label),
+      away_code: m.away_code ?? b.away.code,
+      away_label: m.away_code ? m.away_label : (b.away.name ?? m.away_label),
+    }
+  })
+}

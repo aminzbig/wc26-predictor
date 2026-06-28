@@ -7,6 +7,7 @@ import { MatchGrid } from '../components/MatchGrid'
 import { MatchDetail } from '../components/MatchDetail'
 import { type View } from '../components/ViewToggle'
 import { Layers, LayoutGrid } from 'lucide-react'
+import { projectMatchTeams } from '../lib/bracket'
 import type { Match } from '../lib/types'
 
 // Which card to open on: a game playing right now, else the next upcoming one,
@@ -36,9 +37,11 @@ export function Matches() {
   const [index, setIndex] = useState(-1)
   const [selected, setSelected] = useState<Match | null>(null)
 
-  // Sorted ascending by kickoff.
+  // Project knockout teams from live standings (R32 from the group tables; later
+  // rounds from finished earlier-round results) so cards show real countries, not
+  // bare seed labels, then sort ascending by kickoff.
   const shown = useMemo(
-    () => [...matches].sort((a, b) => new Date(a.kickoff_at).getTime() - new Date(b.kickoff_at).getTime()),
+    () => projectMatchTeams(matches).sort((a, b) => new Date(a.kickoff_at).getTime() - new Date(b.kickoff_at).getTime()),
     [matches],
   )
 

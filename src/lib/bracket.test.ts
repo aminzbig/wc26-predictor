@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { resolveBracket, assignThirdPlaces } from './bracket'
+import { resolveBracket, assignThirdPlaces, projectMatchTeams } from './bracket'
 import type { Match } from './types'
 
 let _id = 0
@@ -126,5 +126,59 @@ describe('resolveBracket', () => {
         home_score: 1, away_score: 1, status: 'finished', multiplier: 1.5 }),
     ])
     expect(out.find(b => b.match_no === 73)!.winnerCode).toBeNull()
+  })
+})
+
+describe('projectMatchTeams', () => {
+  test('fills knockout seed labels with projected code + country name', () => {
+    const out = projectMatchTeams([
+      ...twoDoneGroups(),
+      mk({ id: 'r32a', match_no: 73, stage: 'r32', home_label: '1A', away_label: '2B', multiplier: 1.5 }),
+    ])
+    const m = out.find(x => x.id === 'r32a')!
+    // Group A winner (mx) vs Group B runner-up (ar) — projected onto the card fields.
+    expect(m.home_code).toBe('mx')
+    expect(m.home_label).toBe('MX')   // name from standings (group g() sets name=CODE)
+    expect(m.away_code).toBe('ar')
+    expect(m.away_label).toBe('AR')
+  })
+
+  test('projects later rounds from finished earlier-round results', () => {
+    const out = projectMatchTeams([
+      ...twoDoneGroups(),
+      mk({ id: 'r32', match_no: 73, stage: 'r32', home_label: '1A', away_label: '1B',
+        home_score: 2, away_score: 0, status: 'finished', multiplier: 1.5 }),
+      mk({ id: 'r16', match_no: 89, stage: 'r16', home_label: 'W73', away_label: '2A', multiplier: 2 }),
+    ])
+    const r16 = out.find(x => x.id === 'r16')!
+    expect(r16.home_code).toBe('mx') // winner of #73
+    expect(r16.away_code).toBe('kr') // Group A runner-up
+  })
+
+  test('keeps the seed label when the slot cannot be projected yet', () => {
+    const out = projectMatchTeams([
+      mk({ id: 'r32', match_no: 73, stage: 'r32', home_label: '1A', away_label: '2B', multiplier: 1.5 }),
+    ])
+    const m = out.find(x => x.id === 'r32')!
+    expect(m.home_code).toBeNull()
+    expect(m.home_label).toBe('1A')
+  })
+
+  test('leaves group matches untouched', () => {
+    const group = g('Group A', 'mx', 'za', 2, 0)
+    const out = projectMatchTeams([group])
+    expect(out[0]).toBe(group)
+  })
+
+  test('does not overwrite a knockout team already set in the DB', () => {
+    const out = projectMatchTeams([
+      ...twoDoneGroups(),
+      mk({ id: 'r32', match_no: 73, stage: 'r32', home_code: 'us', home_label: 'USA',
+        away_label: '2B', multiplier: 1.5 }),
+    ])
+    const m = out.find(x => x.id === 'r32')!
+    expect(m.home_code).toBe('us')   // DB value preserved
+    expect(m.home_label).toBe('USA')
+    expect(m.away_code).toBe('ar')   // still projected
   })
 })
