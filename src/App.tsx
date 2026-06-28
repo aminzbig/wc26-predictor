@@ -16,6 +16,7 @@ import { AdminFixtures } from './screens/admin/AdminFixtures'
 import { AdminPlayers } from './screens/admin/AdminPlayers'
 import { AdminPoints } from './screens/admin/AdminPoints'
 import { AdminSettings } from './screens/admin/AdminSettings'
+import { AdminCorrections } from './screens/admin/AdminCorrections'
 
 // Fixed-height column that is also the positioning anchor for the floating
 // glass dock. The content area scrolls internally behind the dock (giving the
@@ -55,6 +56,7 @@ export default function App() {
         <Route path="/admin/fixtures" element={<Protected admin><Shell><AdminFixtures /></Shell></Protected>} />
         <Route path="/admin/players" element={<Protected admin><Shell><AdminPlayers /></Shell></Protected>} />
         <Route path="/admin/points" element={<Protected admin><Shell><AdminPoints /></Shell></Protected>} />
+        <Route path="/admin/fixes" element={<Protected admin><Shell><AdminCorrections /></Shell></Protected>} />
         <Route path="/admin/settings" element={<Protected admin><Shell><AdminSettings /></Shell></Protected>} />
         <Route path="*" element={<Navigate to="/matches" replace />} />
       </Routes>

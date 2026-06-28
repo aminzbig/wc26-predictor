@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-const tabs = [['/admin', 'Results'], ['/admin/fixtures', 'Fixtures'], ['/admin/players', 'Players'], ['/admin/points', 'Points'], ['/admin/settings', 'Settings']]
+const tabs = [['/admin', 'Results'], ['/admin/fixtures', 'Fixtures'], ['/admin/players', 'Players'], ['/admin/points', 'Points'], ['/admin/fixes', 'Fixes'], ['/admin/settings', 'Settings']]
 export const AdminTabs = () =>
   <div className="flex gap-0 mb-4 overflow-x-auto border-[3px] border-ink">
     {tabs.map(([to, label]) =>
