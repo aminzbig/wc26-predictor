@@ -152,3 +152,23 @@ insert into matches(match_no,stage,group_label,home_code,away_code,home_label,aw
 insert into matches(match_no,stage,group_label,home_code,away_code,home_label,away_label,kickoff_at,home_score,away_score,multiplier,status) values (102,'sf',null,null,null,'W99','W100','2026-07-15T15:00:00-04:00',null,null,4,'scheduled');
 insert into matches(match_no,stage,group_label,home_code,away_code,home_label,away_label,kickoff_at,home_score,away_score,multiplier,status) values (103,'third',null,null,null,'L101','L102','2026-07-18T17:00:00-04:00',null,null,6,'scheduled');
 insert into matches(match_no,stage,group_label,home_code,away_code,home_label,away_label,kickoff_at,home_score,away_score,multiplier,status) values (104,'final',null,null,null,'W101','W102','2026-07-19T15:00:00-04:00',null,null,6,'scheduled');
+
+-- Knockout venues: fixed per FIFA match number regardless of which teams qualify
+-- (group-stage venues are backfilled from API-Football; knockout matches are not).
+-- Kept in sync with migration 0026_knockout_venues.sql.
+update matches m
+set venue_name = v.name, venue_city = v.city
+from (values
+  (73,'SoFi Stadium','Los Angeles'),(74,'Gillette Stadium','Boston'),(75,'Estadio BBVA','Monterrey'),
+  (76,'NRG Stadium','Houston'),(77,'MetLife Stadium','New York New Jersey'),(78,'AT&T Stadium','Dallas'),
+  (79,'Estadio Azteca','Mexico City'),(80,'Mercedes-Benz Stadium','Atlanta'),(81,'Levi''s Stadium','San Francisco Bay Area'),
+  (82,'Lumen Field','Seattle'),(83,'BMO Field','Toronto'),(84,'SoFi Stadium','Los Angeles'),
+  (85,'BC Place','Vancouver'),(86,'Hard Rock Stadium','Miami'),(87,'Arrowhead Stadium','Kansas City'),
+  (88,'AT&T Stadium','Dallas'),(89,'Lincoln Financial Field','Philadelphia'),(90,'NRG Stadium','Houston'),
+  (91,'MetLife Stadium','New York New Jersey'),(92,'Estadio Azteca','Mexico City'),(93,'AT&T Stadium','Dallas'),
+  (94,'Lumen Field','Seattle'),(95,'Mercedes-Benz Stadium','Atlanta'),(96,'BC Place','Vancouver'),
+  (97,'Gillette Stadium','Boston'),(98,'SoFi Stadium','Los Angeles'),(99,'Hard Rock Stadium','Miami'),
+  (100,'Arrowhead Stadium','Kansas City'),(101,'AT&T Stadium','Dallas'),(102,'Mercedes-Benz Stadium','Atlanta'),
+  (103,'Hard Rock Stadium','Miami'),(104,'MetLife Stadium','New York New Jersey')
+) as v(match_no, name, city)
+where m.match_no = v.match_no and m.stage <> 'group';
