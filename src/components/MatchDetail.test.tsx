@@ -1,4 +1,4 @@
-import { render, screen, act } from '@testing-library/react'
+import { render, screen, act, fireEvent } from '@testing-library/react'
 import { vi } from 'vitest'
 import { MatchDetail } from './MatchDetail'
 import { tap } from '../test/pointer'
@@ -18,8 +18,13 @@ const ko: Match = {
   prob_home: null, prob_draw: null, prob_away: null,
 }
 
-test('fresh knockout card (default 0-0, no prediction) shows the picker', () => {
+test('fresh knockout card (no prediction) hides the picker until both scores are entered', () => {
   render(<MatchDetail match={ko} prediction={undefined} onSave={async () => {}} onClose={() => {}} />)
+  // Untouched scores read "–", not a 0-0 tie, so the penalty picker stays hidden.
+  expect(screen.queryByLabelText(/Brazil advances/i)).toBeNull()
+  // Typing an equal scoreline (including a deliberate 0-0) makes it a tie → picker appears.
+  fireEvent.change(screen.getByLabelText(/Brazil predicted score/i), { target: { value: '0' } })
+  fireEvent.change(screen.getByLabelText(/Croatia predicted score/i), { target: { value: '0' } })
   expect(screen.getByLabelText(/Brazil advances/i)).toBeInTheDocument()
 })
 
@@ -34,7 +39,7 @@ test('a chosen advancer renders the winner badge', () => {
   render(<MatchDetail match={ko}
     prediction={{ id: 'p', player_id: 'x', match_id: '1', home_pred: 1, away_pred: 1, points_awarded: null, winner_side: 'away' }}
     onSave={async () => {}} onClose={() => {}} />)
-  expect(screen.getByText(/Croatia to advance/i)).toBeInTheDocument()
+  expect(screen.getByText(/Croatia wins on penalties/i)).toBeInTheDocument()
 })
 
 test('choosing an advancer auto-saves with the winner_side', async () => {
@@ -58,7 +63,7 @@ test('locked knockout tie shows the read-only picker and the winner badge', () =
     prediction={{ id: 'p', player_id: 'x', match_id: '1', home_pred: 1, away_pred: 1, points_awarded: null, winner_side: 'away' }}
     onSave={async () => {}} onClose={() => {}} />)
   expect(screen.getByLabelText(/Brazil advances/i)).toBeInTheDocument()
-  expect(screen.getByText(/Croatia to advance/i)).toBeInTheDocument()
+  expect(screen.getByText(/Croatia wins on penalties/i)).toBeInTheDocument()
 })
 
 test('group-stage tie shows no picker in the detail view', () => {
@@ -80,5 +85,5 @@ test('editable knockout tie with no pick shows the nudge', () => {
   render(<MatchDetail match={ko}
     prediction={{ id: 'p', player_id: 'x', match_id: '1', home_pred: 1, away_pred: 1, points_awarded: null }}
     onSave={async () => {}} onClose={() => {}} />)
-  expect(screen.getByText(/pick who advances/i)).toBeInTheDocument()
+  expect(screen.getByText(/pick the penalty winner/i)).toBeInTheDocument()
 })

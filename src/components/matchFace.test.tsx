@@ -83,5 +83,5 @@ test('WinnerPicker: read-only with no pick shows a neutral caption, not the prom
 
 test('AdvancerBadge: names the advancing team', () => {
   render(<AdvancerBadge side="away" {...PICK} />)
-  expect(screen.getByText(/Croatia to advance/i)).toBeInTheDocument()
+  expect(screen.getByText(/Croatia wins on penalties/i)).toBeInTheDocument()
 })

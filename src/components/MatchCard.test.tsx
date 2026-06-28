@@ -21,10 +21,11 @@ test('entering a fresh 0-0 prediction auto-saves it', async () => {
   try {
     const onSave = vi.fn(async () => {})
     render(<MatchCard match={m} prediction={undefined} onSave={onSave} />)
-    // No prior prediction; the user deliberately picks 0-0. Clearing the field
-    // fires onChange(0) — the realistic way to commit a zero.
-    fireEvent.change(screen.getByLabelText(/Brazil predicted score/i), { target: { value: '' } })
-    fireEvent.change(screen.getByLabelText(/Croatia predicted score/i), { target: { value: '' } })
+    // No prior prediction; the user deliberately picks 0-0 by typing a zero in
+    // each field. (Clearing a field now means "not entered" → null, which never
+    // saves — both sides must hold a number before we persist.)
+    fireEvent.change(screen.getByLabelText(/Brazil predicted score/i), { target: { value: '0' } })
+    fireEvent.change(screen.getByLabelText(/Croatia predicted score/i), { target: { value: '0' } })
     await act(async () => { vi.advanceTimersByTime(800) })
     expect(onSave).toHaveBeenCalledWith(0, 0)
   } finally {
@@ -60,8 +61,13 @@ test('booster already used this round renders a disabled badge', () => {
 
 const ko: Match = { ...m, stage: 'r16', group_label: null }
 
-test('fresh knockout card (default 0-0, no prediction) shows the advancer picker', () => {
+test('fresh knockout card (no prediction) hides the picker until both scores are entered', () => {
   render(<MatchCard match={ko} prediction={undefined} onSave={async () => {}} />)
+  // Untouched scores read "–", not a 0-0 tie, so the penalty picker stays hidden.
+  expect(screen.queryByLabelText(/Brazil advances/i)).toBeNull()
+  // Typing an equal scoreline (including a deliberate 0-0) makes it a tie → picker appears.
+  fireEvent.change(screen.getByLabelText(/Brazil predicted score/i), { target: { value: '0' } })
+  fireEvent.change(screen.getByLabelText(/Croatia predicted score/i), { target: { value: '0' } })
   expect(screen.getByLabelText(/Brazil advances/i)).toBeInTheDocument()
 })
 

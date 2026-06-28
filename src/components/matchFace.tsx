@@ -146,7 +146,7 @@ export function TopThreePredictors({ match, boosted }: { match: Match; boosted?:
 // detail; changes are auto-saved by the parent (no explicit save button).
 export function FlagPanel({ code, label, value, editable, onChange }: {
   code: string | null; label: string | null; value: number | null
-  editable?: boolean; onChange?: (n: number) => void
+  editable?: boolean; onChange?: (n: number | null) => void
 }) {
   const numCls = 'font-display text-white leading-none text-[clamp(64px,calc(var(--app-vh)*0.20),176px)]'
   const shadow = { textShadow: '0 3px 12px rgba(0,0,0,.75), 0 0 6px rgba(0,0,0,.6)' } as const
@@ -179,10 +179,10 @@ export function FlagPanel({ code, label, value, editable, onChange }: {
               never blocks a swipe. */}
           <input
             ref={inputRef}
-            type="number" inputMode="numeric" min={0} max={99} value={value ?? 0}
+            type="number" inputMode="numeric" min={0} max={99} value={value ?? ''}
             tabIndex={-1}
             data-editing={editing}
-            onChange={e => onChange(e.target.value === '' ? 0 : Math.max(0, Math.min(99, Math.floor(+e.target.value))))}
+            onChange={e => onChange(e.target.value === '' ? null : Math.max(0, Math.min(99, Math.floor(+e.target.value))))}
             onPointerDown={e => { if (editing) e.stopPropagation() }}
             onBlur={() => setEditing(false)}
             aria-label={`${label ?? 'team'} predicted score`}
@@ -281,16 +281,25 @@ export function WinnerPicker({ homeLabel, awayLabel, homeCode, awayCode, value, 
       transition={reduce ? { duration: 0 } : { type: 'spring', stiffness: 320, damping: 32 }}
       className={`absolute inset-x-0 bottom-0 z-[6] bg-ink border-t-[3px] border-ink ${needs ? 'winner-needs' : ''}`}
     >
-      <div className="h-[18px] grid place-items-center bg-black/25 font-sans font-900 text-[9px] uppercase tracking-[0.22em] text-yellow leading-none">
-        {value
-          ? `✓ ${abbr3(value === 'home' ? homeLabel : awayLabel)} goes through`
-          : (editable ? 'Who advances?' : 'No advancer picked')}
+      <div className="h-[18px] flex items-center justify-center gap-1 bg-black/25 font-sans font-900 text-[9px] uppercase tracking-[0.12em] text-yellow leading-none px-2 text-center">
+        <span aria-hidden className="font-display text-[11px] leading-none">{value ? '✓' : '⊙'}</span>
+        <span>
+          {value
+            ? `${abbr3(value === 'home' ? homeLabel : awayLabel)} wins on penalties`
+            : (editable ? 'Tie → who wins on penalties?' : 'No advancer picked')}
+        </span>
       </div>
       <div className="winner-choices relative flex h-[46px] overflow-hidden">
         {half('home', homeLabel, homeCode, homeTap)}
         {half('away', awayLabel, awayCode, awayTap)}
         <span aria-hidden className="absolute top-0 bottom-0 left-1/2 -translate-x-1/2 w-[3px] bg-blue z-[2] pointer-events-none" />
       </div>
+      {/* Make the rule explicit: the shootout score is irrelevant — only the winner counts. */}
+      {editable && (
+        <div className="h-[14px] grid place-items-center bg-black/30 font-sans font-700 text-[8px] uppercase tracking-[0.08em] text-paper/55 leading-none px-2 text-center">
+          Only the winner counts — penalty score doesn't matter
+        </div>
+      )}
     </motion.div>
   )
 }
@@ -305,7 +314,7 @@ export function AdvancerBadge({ side, homeLabel, awayLabel, homeCode, awayCode }
     <div className="mt-2 inline-flex items-center gap-2 bg-ink text-yellow border-[3px] border-yellow px-3 py-2">
       <Trophy size={16} />
       {code && <span className={`fi fis fi-${code} !w-[24px] !h-[17px] bg-cover border-2 border-yellow flex-none`} />}
-      <span className="font-display text-[16px] uppercase tracking-wide leading-none">{label ?? '—'} to advance</span>
+      <span className="font-display text-[16px] uppercase tracking-wide leading-none">{label ?? '—'} wins on penalties</span>
     </div>
   )
 }

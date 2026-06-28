@@ -19,8 +19,8 @@ export function MatchCard({ match, prediction, onSave, onOpen, boosterActive, bo
     boosterActive?: boolean; boosterRoundUsed?: boolean; onToggleBooster?: () => void }) {
   const state = matchState(match)
   const isKnockout = match.stage !== 'group'
-  const [hp, setHp] = useState(prediction?.home_pred ?? 0)
-  const [ap, setAp] = useState(prediction?.away_pred ?? 0)
+  const [hp, setHp] = useState<number | null>(prediction?.home_pred ?? null)
+  const [ap, setAp] = useState<number | null>(prediction?.away_pred ?? null)
   const [winner, setWinner] = useState<'home' | 'away' | null>(prediction?.winner_side ?? null)
   const [touched, setTouched] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -30,19 +30,20 @@ export function MatchCard({ match, prediction, onSave, onOpen, boosterActive, bo
 
   // keep the score in sync when the saved prediction changes (e.g. from the detail view)
   useEffect(() => {
-    setHp(prediction?.home_pred ?? 0)
-    setAp(prediction?.away_pred ?? 0)
+    setHp(prediction?.home_pred ?? null)
+    setAp(prediction?.away_pred ?? null)
     setWinner(prediction?.winner_side ?? null)
   }, [prediction?.home_pred, prediction?.away_pred, prediction?.winner_side])
 
   // Auto-save: debounce edits and persist them — no explicit "Lock prediction" button.
-  // Baseline is null (not 0) when there's no saved prediction, so a deliberate 0-0
-  // pick still differs from "untouched" and saves. `touched` gates out the mount pass
-  // so we never persist the default 0-0 the user never actually entered.
+  // Empty scores are null ("–", not entered) so they never persist; once BOTH sides
+  // have a number we save (a deliberate 0-0 is a real pick). `touched` gates the mount
+  // pass so we never persist a prediction the user never actually entered.
   const savedH = prediction?.home_pred ?? null, savedA = prediction?.away_pred ?? null
   const savedWinner = prediction?.winner_side ?? null
   useEffect(() => {
     if (!editable || !touched) return
+    if (hp == null || ap == null) return  // need both scores before persisting (DB columns are NOT NULL)
     if (hp === savedH && ap === savedA && winner === savedWinner) return
     const t = setTimeout(async () => {
       setSaving(true)
