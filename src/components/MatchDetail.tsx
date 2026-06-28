@@ -661,8 +661,9 @@ export function MatchDetail({ match, prediction, onSave, onClose }: {
               </div>
             )}
 
-            {/* Advancer — surface the chosen match winner on a knockout tie */}
-            {isKnockout && tie && (
+            {/* Advancer — surface the chosen match winner on a knockout tie.
+                Gated on the same showPicker as the band so the two never diverge. */}
+            {showPicker && (
               <div className="mt-4">
                 <div className="text-[11px] font-sans font-900 uppercase tracking-widest opacity-70">Advances to next round</div>
                 {winner

@@ -87,6 +87,17 @@ test('group-stage tie shows no advancer picker', () => {
   expect(screen.queryByLabelText(/Brazil advances/i)).toBeNull()
 })
 
+test('locked knockout tie shows the advancer pick read-only (tap does not save)', () => {
+  const onSave = vi.fn(async () => {})
+  const locked: Match = { ...ko, kickoff_at: new Date(Date.now() - 3.6e6).toISOString() } // past kickoff → locked
+  render(<MatchCard match={locked}
+    prediction={{ id: 'p', player_id: 'x', match_id: '1', home_pred: 1, away_pred: 1, points_awarded: null, winner_side: 'home' }}
+    onSave={onSave} />)
+  expect(screen.getByLabelText(/Brazil advances/i)).toBeInTheDocument()
+  tap(screen.getByLabelText(/Brazil advances/i))
+  expect(onSave).not.toHaveBeenCalled()
+})
+
 test('choosing an advancer auto-saves with the winner_side', async () => {
   vi.useFakeTimers()
   try {

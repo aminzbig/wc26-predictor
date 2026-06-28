@@ -66,6 +66,21 @@ test('WinnerPicker: read-only does not fire onChange on tap', () => {
   expect(onChange).not.toHaveBeenCalled()
 })
 
+test('WinnerPicker: a tap selects but does not bubble to a parent click handler', () => {
+  const onChange = vi.fn()
+  const parentClick = vi.fn()
+  render(<div onClick={parentClick}><WinnerPicker {...PICK} value={null} editable onChange={onChange} /></div>)
+  tap(screen.getByLabelText(/Brazil advances/i))
+  expect(onChange).toHaveBeenCalledWith('home')
+  expect(parentClick).not.toHaveBeenCalled()
+})
+
+test('WinnerPicker: read-only with no pick shows a neutral caption, not the prompt', () => {
+  render(<WinnerPicker {...PICK} value={null} editable={false} onChange={() => {}} />)
+  expect(screen.getByText(/no advancer picked/i)).toBeInTheDocument()
+  expect(screen.queryByText(/who advances/i)).toBeNull()
+})
+
 test('AdvancerBadge: names the advancing team', () => {
   render(<AdvancerBadge side="away" {...PICK} />)
   expect(screen.getByText(/Croatia to advance/i)).toBeInTheDocument()

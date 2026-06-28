@@ -3,7 +3,7 @@
 // so the two stay identical. Outlines are the app standard: border-[3px] border-ink.
 import { useEffect, useRef, useState, type MouseEvent as RMouseEvent } from 'react'
 import { createPortal } from 'react-dom'
-import { motion } from 'framer-motion'
+import { motion, useReducedMotion } from 'framer-motion'
 import { Trophy } from 'lucide-react'
 import type { Match } from '../lib/types'
 import { supabase } from '../lib/supabase'
@@ -250,6 +250,7 @@ export function WinnerPicker({ homeLabel, awayLabel, homeCode, awayCode, value, 
   const homeTap = useTapNotSwipe(() => { if (editable) onChange?.('home') })
   const awayTap = useTapNotSwipe(() => { if (editable) onChange?.('away') })
   const needs = editable && value == null
+  const reduce = useReducedMotion()
 
   const half = (side: Side, label: string | null, code: string | null, handlers: ReturnType<typeof useTapNotSwipe>) => {
     const chosen = value === side
@@ -276,12 +277,14 @@ export function WinnerPicker({ homeLabel, awayLabel, homeCode, awayCode, value, 
 
   return (
     <motion.div
-      initial={{ y: '115%' }} animate={{ y: 0 }} exit={{ y: '115%' }}
-      transition={{ type: 'spring', stiffness: 320, damping: 32 }}
+      initial={reduce ? false : { y: '115%' }} animate={{ y: 0 }} exit={reduce ? { opacity: 0 } : { y: '115%' }}
+      transition={reduce ? { duration: 0 } : { type: 'spring', stiffness: 320, damping: 32 }}
       className={`absolute inset-x-0 bottom-0 z-[6] bg-ink border-t-[3px] border-ink ${needs ? 'winner-needs' : ''}`}
     >
       <div className="h-[18px] grid place-items-center bg-black/25 font-sans font-900 text-[9px] uppercase tracking-[0.22em] text-yellow leading-none">
-        {value ? `✓ ${abbr3(value === 'home' ? homeLabel : awayLabel)} goes through` : 'Who advances?'}
+        {value
+          ? `✓ ${abbr3(value === 'home' ? homeLabel : awayLabel)} goes through`
+          : (editable ? 'Who advances?' : 'No advancer picked')}
       </div>
       <div className="winner-choices relative flex h-[46px] overflow-hidden">
         {half('home', homeLabel, homeCode, homeTap)}

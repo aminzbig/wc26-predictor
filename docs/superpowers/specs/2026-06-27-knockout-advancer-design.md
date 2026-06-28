@@ -172,3 +172,16 @@ migration `0025`, `index.css`.
   a client mirror update, and a re-score).
 - Showing the pick in `MatchGrid` tiles or comparing it against the real result
   on finished games.
+
+## Known limitation (deferred from adversarial review)
+
+- **Pick flip-back during an in-flight save (minor, un-scored).** The
+  prediction→state sync effect re-adopts `winner_side` from the reloaded
+  prediction after a save. If the user taps the *other* side during the ~700ms
+  debounce + save round-trip, the echoed reload can revert the highlight to the
+  first pick and drop the second. This is the same pre-existing pattern that
+  affects `home_pred`/`away_pred`; the feature merely extends it to `winner_side`.
+  Window is narrow, the UI self-corrects to match the DB, and `winner_side` is not
+  scored — so it is deferred. A proper fix (track the last value sent to `onSave`
+  via a ref and only adopt an incoming value that differs from what we just wrote,
+  applied to scores too) deserves its own TDD pass before a scoring bonus lands.
