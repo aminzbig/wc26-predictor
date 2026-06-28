@@ -1,41 +1,73 @@
--- Single source of truth for the prediction scoring formula. STABLE (not
--- IMMUTABLE) because it reads the settings table. Replaces the formula that was
--- duplicated inline in 0003_score_function.sql and 0004_recompute.sql.
-create or replace function score_points(
-  p_home_pred int, p_away_pred int,
-  p_home_score int, p_away_score int,
-  p_mult numeric
-) returns integer language sql stable set search_path = public as $$
-  select (p_mult * (
-    case
-      when p_home_pred = p_home_score and p_away_pred = p_away_score
-        then (select value from settings where key='points_exact')
-      when p_home_pred - p_away_pred = p_home_score - p_away_score
-        then (select value from settings where key='points_diff')
-      when sign(p_home_pred - p_away_pred) = sign(p_home_score - p_away_score)
-        then (select value from settings where key='points_outcome')
-      else 0
-    end))::int;
-$$;
-
--- Refactor the whole-match scorer to use the shared helper. Behavior unchanged.
+-- Admin per-prediction correction.
+--
+-- IMPORTANT: this migration does NOT introduce a new scoring formula. Current
+-- production scoring is the additive FIFA model with the per-player booster and
+-- the "way-off => 0" rule, defined in 0023_far_off_zero.sql. The risky bonus
+-- depends on the whole prediction distribution for a match, the booster on a
+-- per-player lookup, and the way-off rule on the kickoff cutoff -- so a single
+-- prediction cannot be scored in isolation. admin_set_prediction therefore
+-- upserts the prediction and delegates to recompute_match (the canonical
+-- scorer), which re-scores the whole match correctly and idempotently.
+--
+-- The recompute_match definition below is an exact restore of 0023 (a no-op
+-- where the cloud DB already matches it). It is included so this file is
+-- self-consistent and so applying it repairs any environment that previously
+-- ran an earlier, incorrect draft of this migration.
 create or replace function recompute_match(p_match uuid)
 returns void language plpgsql security definer set search_path = public as $$
 declare
   m matches%rowtype;
+  mult numeric;
+  actual_out int;
+  total int;
+  same_out int;
+  risky boolean := false;
+  far_off boolean;
 begin
   select * into m from matches where id = p_match;
   if m.home_score is null or m.away_score is null then
     raise exception 'match has no final score';
   end if;
+  mult := coalesce(m.multiplier, 1);
+  actual_out := sign(m.home_score - m.away_score);
+  far_off := m.kickoff_at >= '2026-06-24T00:00:00Z'::timestamptz;
+
+  if actual_out <> 0 then
+    select count(*), count(*) filter (where sign(home_pred - away_pred) = actual_out)
+      into total, same_out
+      from predictions where match_id = p_match;
+    if total > 0 and same_out::numeric / total < 0.20 then
+      risky := true;
+    end if;
+  end if;
 
   update predictions p set
-    points_awarded = score_points(p.home_pred, p.away_pred, m.home_score, m.away_score, m.multiplier),
+    points_awarded = case
+      when far_off
+           and abs(p.home_pred - m.home_score) + abs(p.away_pred - m.away_score) >= 5
+        then 0                                                                       -- Way-off: 0 for the whole match
+      else mult
+        * (case when exists (select 1 from boosters b
+                             where b.player_id = p.player_id and b.match_id = p_match)
+                then 2 else 1 end)                                                   -- Booster: double
+        * (
+            (case when sign(p.home_pred - p.away_pred) = actual_out then 10 else 0 end)  -- Correct Outcome
+          + (case when p.home_pred = m.home_score then 5 else 0 end)                     -- Correct Goals (Home)
+          + (case when p.away_pred = m.away_score then 5 else 0 end)                     -- Correct Goals (Away)
+          + (case when p.home_pred - p.away_pred = m.home_score - m.away_score then 5 else 0 end) -- Goal Difference
+          + (case when p.home_pred = m.home_score and p.away_pred = m.away_score then 5 else 0 end) -- Score Bonus
+          + (case when risky and sign(p.home_pred - p.away_pred) = actual_out then 10 else 0 end)   -- Risky Bonus
+        )
+      end,
     updated_at = now()
   where p.match_id = p_match;
 
-  update matches set status='finished' where id = p_match;
+  update matches set status = 'finished' where id = p_match;
 end; $$;
+
+-- Drop the obsolete best-of-three helper an earlier draft of this migration
+-- introduced; current scoring lives entirely in recompute_match.
+drop function if exists score_points(int, int, int, int, numeric);
 
 -- Audit trail of admin per-prediction corrections.
 create table if not exists prediction_corrections (
@@ -57,8 +89,11 @@ drop policy if exists predictions_admin_read on predictions;
 create policy predictions_admin_read on predictions
   for select to authenticated using (is_admin());
 
--- Admin: set/fix one player's prediction for one match, re-score that single
--- row, and record the change. Returns new points (null if match not scored yet).
+-- Admin: set/fix one player's prediction for one match, then re-score that match
+-- with the canonical scorer. Returns the corrected player's new points (null if
+-- the match has no final score yet). Re-scoring the whole match is intentional
+-- and correct: the risky bonus is distribution-dependent, so adding or editing a
+-- prediction can legitimately shift other players' risky bonus on that match.
 create or replace function admin_set_prediction(
   p_player uuid, p_match uuid, p_home int, p_away int
 ) returns integer language plpgsql security definer set search_path = public as $$
@@ -77,22 +112,27 @@ begin
   select * into m from matches where id = p_match;
   if not found then raise exception 'match not found'; end if;
 
+  -- Capture the prior state for the audit row before we overwrite it. When no
+  -- prior prediction exists, every field of `existing` is null.
   select * into existing from predictions
     where player_id = p_player and match_id = p_match;
 
-  if m.home_score is not null and m.away_score is not null then
-    new_points := score_points(p_home, p_away, m.home_score, m.away_score, m.multiplier);
-  else
-    new_points := null;
-  end if;
-
+  -- Upsert the prediction. Points are (re)derived below by recompute_match; if
+  -- the match is not yet scored they stay null until normal FT scoring runs.
   insert into predictions (player_id, match_id, home_pred, away_pred, points_awarded, updated_at)
-  values (p_player, p_match, p_home, p_away, new_points, now())
+  values (p_player, p_match, p_home, p_away, null, now())
   on conflict (player_id, match_id) do update
     set home_pred = excluded.home_pred,
         away_pred = excluded.away_pred,
-        points_awarded = excluded.points_awarded,
         updated_at = now();
+
+  if m.home_score is not null and m.away_score is not null then
+    perform recompute_match(p_match);
+    select points_awarded into new_points from predictions
+      where player_id = p_player and match_id = p_match;
+  else
+    new_points := null;
+  end if;
 
   insert into prediction_corrections (
     match_id, player_id, admin_id,
