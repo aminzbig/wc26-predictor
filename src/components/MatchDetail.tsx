@@ -9,7 +9,7 @@ import { farOffApplies, isFarOff } from '../lib/scoring'
 import { GameInfo, FlagPanel, TeamNameBar, PointsStar, ScoreLine, WinnerPicker, AdvancerBadge } from './matchFace'
 import { Avatar } from './Avatar'
 
-type PeoplePick = { id: string; name: string; flag_code: string | null; avatar_url: string | null; home_pred: number; away_pred: number; points: number | null }
+export type PeoplePick = { id: string; name: string; flag_code: string | null; avatar_url: string | null; home_pred: number; away_pred: number; points: number | null; winner_side: 'home' | 'away' | null }
 
 // How close a pick landed vs. the final score — mirrors the tiers in lib/scoring.ts.
 type Tier = 'exact' | 'diff' | 'outcome' | 'miss' | 'faroff'
@@ -37,7 +37,7 @@ function PeoplePredictions({ match }: { match: Match }) {
   useEffect(() => {
     let active = true
     supabase.from('predictions')
-      .select('id,home_pred,away_pred,points_awarded, players(name,flag_code,avatar_url)')
+      .select('id,home_pred,away_pred,points_awarded,winner_side, players(name,flag_code,avatar_url)')
       .eq('match_id', match.id)
       .then(({ data }) => {
         if (!active) return
@@ -45,6 +45,7 @@ function PeoplePredictions({ match }: { match: Match }) {
           id: r.id, name: r.players?.name ?? '?', flag_code: r.players?.flag_code ?? null,
           avatar_url: r.players?.avatar_url ?? null,
           home_pred: r.home_pred, away_pred: r.away_pred, points: r.points_awarded,
+          winner_side: r.winner_side ?? null,
         }))
         list.sort((a, b) => (b.points ?? -1) - (a.points ?? -1) || a.name.localeCompare(b.name))
         setRows(list)
@@ -75,9 +76,18 @@ function HaloPoints({ value }: { value: number }) {
   )
 }
 
+// The team a player backed to advance on penalties for a level knockout scoreline.
+// Renders nothing unless `side` is set (only level KO picks carry a winner_side).
+function WinnerFlag({ side, match, className = '!w-[18px] !h-[12px]' }: { side?: 'home' | 'away' | null; match: Match; className?: string }) {
+  if (!side) return null
+  const code = side === 'home' ? match.home_code : match.away_code
+  if (!code) return null
+  return <span className={`fi fis fi-${code} ${className} bg-cover border border-ink/20 inline-block align-middle ml-1`} aria-label="advances on penalties" />
+}
+
 // Presentational leaderboard — kept separate from the fetch so it can be rendered
 // in isolation. `rows` is expected pre-sorted by points desc, then name.
-function PicksBoard({ rows, match }: { rows: PeoplePick[]; match: Match }) {
+export function PicksBoard({ rows, match }: { rows: PeoplePick[]; match: Match }) {
   const scored = match.status === 'finished' && match.home_score != null && match.away_score != null
   const live = !scored && match.live_status != null && match.live_home != null && match.live_away != null
   const hs = match.home_score ?? 0, as = match.away_score ?? 0
@@ -139,7 +149,7 @@ function PicksBoard({ rows, match }: { rows: PeoplePick[]; match: Match }) {
                 {(scored || live) && r.tier && (
                   <div className="mt-1 text-[9px] font-sans font-900 uppercase tracking-widest leading-none">
                     {/* live shows the predicted score beside the square instead, so omit it here */}
-                    {scored && <span className="opacity-60">{r.home_pred}–{r.away_pred}</span>}
+                    {scored && <span className="opacity-60">{r.home_pred}–{r.away_pred}<WinnerFlag side={r.winner_side} match={match} className="!w-[13px] !h-[9px]" /></span>}
                     <span className={`${scored ? 'ml-1.5' : ''} ${isTop ? (r.tier === 'miss' ? 'text-ink/40' : 'text-ink') : TIER[r.tier].cls}`}>{scored ? '· ' : ''}{TIER[r.tier].label}</span>
                   </div>
                 )}
@@ -155,13 +165,13 @@ function PicksBoard({ rows, match }: { rows: PeoplePick[]; match: Match }) {
                 /* predicted score sits to the LEFT of the projected square for readability */
                 <div className="flex items-center gap-2 flex-none">
                   <div className="grid place-items-center h-[40px]">
-                    <div className="font-display text-[18px] leading-none text-ink">{r.home_pred}–{r.away_pred}</div>
+                    <div className="font-display text-[18px] leading-none text-ink">{r.home_pred}–{r.away_pred}<WinnerFlag side={r.winner_side} match={match} /></div>
                     <div className="mt-0.5 font-sans font-900 text-[6px] uppercase tracking-[0.2em] leading-none text-ink/40">pick</div>
                   </div>
                   <HaloPoints value={pts} />
                 </div>
               ) : (
-                <div className="font-display text-[16px] leading-none">{r.home_pred}–{r.away_pred}</div>
+                <div className="font-display text-[16px] leading-none">{r.home_pred}–{r.away_pred}<WinnerFlag side={r.winner_side} match={match} /></div>
               )}
             </motion.div>
           )

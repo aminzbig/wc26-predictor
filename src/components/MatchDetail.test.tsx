@@ -87,3 +87,38 @@ test('editable knockout tie with no pick shows the nudge', () => {
     onSave={async () => {}} onClose={() => {}} />)
   expect(screen.getByText(/pick the penalty winner/i)).toBeInTheDocument()
 })
+
+import { PicksBoard } from './MatchDetail'
+import type { PeoplePick } from './MatchDetail'
+
+// A locked knockout match (past kickoff, not finished, no live data) → PicksBoard
+// renders its "locked" branch, which shows each predicted score.
+const lockedKo: Match = {
+  id: '1', match_no: 73, stage: 'r16', group_label: null,
+  home_code: 'br', away_code: 'hr', home_label: 'Brazil', away_label: 'Croatia',
+  kickoff_at: new Date(Date.now() - 3.6e6).toISOString(),
+  home_score: null, away_score: null, multiplier: 1, status: 'scheduled',
+  prob_home: null, prob_draw: null, prob_away: null,
+}
+
+// flag_code is null so the only `fi-*` class on the row is the advancer flag.
+function pick(p: Partial<PeoplePick>): PeoplePick {
+  return { id: 'p1', name: 'Amir', flag_code: null, avatar_url: null, home_pred: 1, away_pred: 1, points: null, winner_side: null, ...p }
+}
+
+test("picks board shows the backed home team's flag for a tie pick", () => {
+  const { container } = render(<PicksBoard rows={[pick({ winner_side: 'home' })]} match={lockedKo} />)
+  expect(container.querySelector('.fi-br')).not.toBeNull()
+})
+
+test("picks board shows the away team's flag, not the home team's, when away is backed", () => {
+  const { container } = render(<PicksBoard rows={[pick({ winner_side: 'away' })]} match={lockedKo} />)
+  expect(container.querySelector('.fi-hr')).not.toBeNull()
+  expect(container.querySelector('.fi-br')).toBeNull()
+})
+
+test('picks board shows no advancer flag for a decisive pick', () => {
+  const { container } = render(<PicksBoard rows={[pick({ home_pred: 2, away_pred: 1, winner_side: null })]} match={lockedKo} />)
+  expect(container.querySelector('.fi-br')).toBeNull()
+  expect(container.querySelector('.fi-hr')).toBeNull()
+})
