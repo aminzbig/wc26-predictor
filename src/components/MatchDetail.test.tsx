@@ -122,3 +122,9 @@ test('picks board shows no advancer flag for a decisive pick', () => {
   expect(container.querySelector('.fi-br')).toBeNull()
   expect(container.querySelector('.fi-hr')).toBeNull()
 })
+
+test('picks board shows no advancer flag when a stale winner_side sits on a decisive pick', () => {
+  const { container } = render(<PicksBoard rows={[pick({ home_pred: 2, away_pred: 1, winner_side: 'home' })]} match={lockedKo} />)
+  expect(container.querySelector('.fi-br')).toBeNull()
+  expect(container.querySelector('.fi-hr')).toBeNull()
+})

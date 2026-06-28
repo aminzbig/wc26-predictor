@@ -76,10 +76,11 @@ function HaloPoints({ value }: { value: number }) {
   )
 }
 
-// The team a player backed to advance on penalties for a level knockout scoreline.
-// Renders nothing unless `side` is set (only level KO picks carry a winner_side).
-function WinnerFlag({ side, match, className = '!w-[18px] !h-[12px]' }: { side?: 'home' | 'away' | null; match: Match; className?: string }) {
-  if (!side) return null
+// The team a player backed to advance on penalties — shown only for a level
+// scoreline (a stale winner_side can linger on a decisive pick if the user edited
+// a tie into a decisive score, so gate on the tie, not just on winner_side).
+function WinnerFlag({ side, home, away, match, className = '!w-[18px] !h-[12px]' }: { side?: 'home' | 'away' | null; home: number; away: number; match: Match; className?: string }) {
+  if (!side || home !== away) return null
   const code = side === 'home' ? match.home_code : match.away_code
   if (!code) return null
   return <span className={`fi fis fi-${code} ${className} bg-cover border border-ink/20 inline-block align-middle ml-1`} aria-label="advances on penalties" />
@@ -149,7 +150,7 @@ export function PicksBoard({ rows, match }: { rows: PeoplePick[]; match: Match }
                 {(scored || live) && r.tier && (
                   <div className="mt-1 text-[9px] font-sans font-900 uppercase tracking-widest leading-none">
                     {/* live shows the predicted score beside the square instead, so omit it here */}
-                    {scored && <span className="opacity-60">{r.home_pred}–{r.away_pred}<WinnerFlag side={r.winner_side} match={match} className="!w-[13px] !h-[9px]" /></span>}
+                    {scored && <span className="opacity-60">{r.home_pred}–{r.away_pred}<WinnerFlag side={r.winner_side} home={r.home_pred} away={r.away_pred} match={match} className="!w-[13px] !h-[9px]" /></span>}
                     <span className={`${scored ? 'ml-1.5' : ''} ${isTop ? (r.tier === 'miss' ? 'text-ink/40' : 'text-ink') : TIER[r.tier].cls}`}>{scored ? '· ' : ''}{TIER[r.tier].label}</span>
                   </div>
                 )}
@@ -165,13 +166,13 @@ export function PicksBoard({ rows, match }: { rows: PeoplePick[]; match: Match }
                 /* predicted score sits to the LEFT of the projected square for readability */
                 <div className="flex items-center gap-2 flex-none">
                   <div className="grid place-items-center h-[40px]">
-                    <div className="font-display text-[18px] leading-none text-ink">{r.home_pred}–{r.away_pred}<WinnerFlag side={r.winner_side} match={match} /></div>
+                    <div className="font-display text-[18px] leading-none text-ink">{r.home_pred}–{r.away_pred}<WinnerFlag side={r.winner_side} home={r.home_pred} away={r.away_pred} match={match} /></div>
                     <div className="mt-0.5 font-sans font-900 text-[6px] uppercase tracking-[0.2em] leading-none text-ink/40">pick</div>
                   </div>
                   <HaloPoints value={pts} />
                 </div>
               ) : (
-                <div className="font-display text-[16px] leading-none">{r.home_pred}–{r.away_pred}<WinnerFlag side={r.winner_side} match={match} /></div>
+                <div className="font-display text-[16px] leading-none">{r.home_pred}–{r.away_pred}<WinnerFlag side={r.winner_side} home={r.home_pred} away={r.away_pred} match={match} /></div>
               )}
             </motion.div>
           )
