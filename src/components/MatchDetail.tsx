@@ -6,7 +6,7 @@ import { matchState } from '../lib/matchState'
 import { supabase } from '../lib/supabase'
 import { rankLivePicks } from '../lib/livePicks'
 import { farOffApplies, isFarOff } from '../lib/scoring'
-import { GameInfo, FlagPanel, TeamNameBar, PointsStar, ScoreLine } from './matchFace'
+import { GameInfo, FlagPanel, TeamNameBar, PointsStar, ScoreLine, WinnerPicker, AdvancerBadge } from './matchFace'
 import { Avatar } from './Avatar'
 
 type PeoplePick = { id: string; name: string; flag_code: string | null; avatar_url: string | null; home_pred: number; away_pred: number; points: number | null }
@@ -501,14 +501,16 @@ function panelColor(match_no: number) {
 export function MatchDetail({ match, prediction, onSave, onClose }: {
   match: Match
   prediction?: Prediction
-  onSave: (h: number, a: number) => Promise<void>
+  onSave: (h: number, a: number, winnerSide?: 'home' | 'away' | null) => Promise<void>
   onClose: () => void
 }) {
   const state = matchState(match)
   const editable = state === 'open'
   const live = state === 'locked' && match.live_home != null // in progress with a known score
+  const isKnockout = match.stage !== 'group'
   const [hp, setHp] = useState(prediction?.home_pred ?? 0)
   const [ap, setAp] = useState(prediction?.away_pred ?? 0)
+  const [winner, setWinner] = useState<'home' | 'away' | null>(prediction?.winner_side ?? null)
   const [touched, setTouched] = useState(false)
   const [saving, setSaving] = useState(false)
 
@@ -522,22 +524,24 @@ export function MatchDetail({ match, prediction, onSave, onClose }: {
   useEffect(() => {
     setHp(prediction?.home_pred ?? 0)
     setAp(prediction?.away_pred ?? 0)
-  }, [prediction?.home_pred, prediction?.away_pred])
+    setWinner(prediction?.winner_side ?? null)
+  }, [prediction?.home_pred, prediction?.away_pred, prediction?.winner_side])
 
   // Auto-save: debounce edits and persist them — no explicit "Update prediction" button.
   // Baseline is null (not 0) when there's no saved prediction, so a deliberate 0-0
   // pick still differs from "untouched" and saves. `touched` gates out the mount pass
   // so we never persist the default 0-0 the user never actually entered.
   const savedH = prediction?.home_pred ?? null, savedA = prediction?.away_pred ?? null
+  const savedWinner = prediction?.winner_side ?? null
   useEffect(() => {
     if (!editable || !touched) return
-    if (hp === savedH && ap === savedA) return
+    if (hp === savedH && ap === savedA && winner === savedWinner) return
     const t = setTimeout(async () => {
       setSaving(true)
-      try { await onSave(hp, ap) } finally { setSaving(false) }
+      try { await (isKnockout ? onSave(hp, ap, winner) : onSave(hp, ap)) } finally { setSaving(false) }
     }, 700)
     return () => clearTimeout(t)
-  }, [hp, ap, editable, touched, savedH, savedA]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [hp, ap, winner, editable, touched, savedH, savedA, savedWinner]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const mult = match.multiplier ?? 1
   const finished = state === 'finished'
@@ -545,6 +549,12 @@ export function MatchDetail({ match, prediction, onSave, onClose }: {
   const homeNum = editable ? hp : (prediction?.home_pred ?? null)
   const awayNum = editable ? ap : (prediction?.away_pred ?? null)
   const points = finished ? prediction?.points_awarded ?? null : null
+
+  // Knockout advancer picker: shown whenever a knockout prediction is a tie —
+  // including the default 0–0 (a knockout can't end level). For a locked/finished
+  // card the tie check requires a real saved prediction (homeNum is null without one).
+  const tie = homeNum != null && awayNum != null && homeNum === awayNum
+  const showPicker = isKnockout && tie
 
   const ph = match.prob_home, pd = match.prob_draw ?? 0, pa = match.prob_away ?? 0
   const showOdds = ph != null
@@ -598,7 +608,7 @@ export function MatchDetail({ match, prediction, onSave, onClose }: {
             </div>
 
             {/* Flags + giant prediction numbers + rainbow points star */}
-            <div className="relative flex items-stretch gap-2 h-[clamp(200px,calc(var(--app-vh)*0.34),280px)]">
+            <div className="relative flex items-stretch gap-2 h-[clamp(200px,calc(var(--app-vh)*0.34),280px)] overflow-hidden">
               <FlagPanel code={match.home_code} label={match.home_label} value={homeNum} editable={editable} onChange={n => { setHp(n); setTouched(true) }} />
               <FlagPanel code={match.away_code} label={match.away_label} value={awayNum} editable={editable} onChange={n => { setAp(n); setTouched(true) }} />
               {points != null && (
@@ -606,6 +616,16 @@ export function MatchDetail({ match, prediction, onSave, onClose }: {
                   <PointsStar points={points} multiplier={match.multiplier} />
                 </div>
               )}
+              <AnimatePresence>
+                {showPicker && (
+                  <WinnerPicker
+                    homeLabel={match.home_label} awayLabel={match.away_label}
+                    homeCode={match.home_code} awayCode={match.away_code}
+                    value={winner} editable={editable}
+                    onChange={side => { setWinner(side); setTouched(true) }}
+                  />
+                )}
+              </AnimatePresence>
             </div>
 
             {/* Team names */}
@@ -638,6 +658,18 @@ export function MatchDetail({ match, prediction, onSave, onClose }: {
             {state === 'locked' && !live && (
               <div className="flex items-center gap-1.5 text-[12px] font-sans font-700 uppercase tracking-wider mt-3 opacity-80">
                 <Lock size={13} /> Prediction locked
+              </div>
+            )}
+
+            {/* Advancer — surface the chosen match winner on a knockout tie */}
+            {isKnockout && tie && (
+              <div className="mt-4">
+                <div className="text-[11px] font-sans font-900 uppercase tracking-widest opacity-70">Advances to next round</div>
+                {winner
+                  ? <AdvancerBadge side={winner} homeLabel={match.home_label} awayLabel={match.away_label} homeCode={match.home_code} awayCode={match.away_code} />
+                  : editable
+                    ? <div className="mt-2 text-[12px] font-sans font-900 uppercase tracking-wider text-ink/70">▲ Pick who advances above</div>
+                    : <div className="mt-2 text-[12px] font-sans font-700 uppercase tracking-wider opacity-60">No advancer picked</div>}
               </div>
             )}
 

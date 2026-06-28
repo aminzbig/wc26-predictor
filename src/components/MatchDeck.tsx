@@ -16,7 +16,7 @@ export function MatchDeck({ matches, index, setIndex, byMatch, onSave, onOpen, b
   index: number
   setIndex: (n: number) => void
   byMatch: Record<string, Prediction>
-  onSave: (matchId: string, h: number, a: number) => Promise<void>
+  onSave: (matchId: string, h: number, a: number, winnerSide?: 'home' | 'away' | null) => Promise<void>
   onOpen: (m: Match) => void
   boostByMatch: Record<string, { match_id: string; stage: Stage }>
   byStage: Record<string, { match_id: string; stage: Stage }>
@@ -108,7 +108,7 @@ export function MatchDeck({ matches, index, setIndex, byMatch, onSave, onOpen, b
             <MatchCard
               match={active}
               prediction={byMatch[active.id]}
-              onSave={(h, a) => onSave(active.id, h, a)}
+              onSave={(h, a, winnerSide) => onSave(active.id, h, a, winnerSide)}
               onOpen={() => { if (!dragged.current) onOpen(active) }}
               boosterActive={activeBoosted}
               boosterRoundUsed={boosterRoundCommitted}

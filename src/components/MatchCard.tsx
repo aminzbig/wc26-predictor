@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { Lock } from 'lucide-react'
 import type { Match, Prediction } from '../lib/types'
 import { matchState } from '../lib/matchState'
-import { GameInfo, TopThreePredictors, FlagPanel, TeamNameBar, PointsStar, ScoreLine, PensLine } from './matchFace'
+import { GameInfo, TopThreePredictors, FlagPanel, TeamNameBar, PointsStar, ScoreLine, PensLine, WinnerPicker } from './matchFace'
 import { BoosterBadge } from './BoosterBadge'
 
 // Panel color cycles deterministically by match_no so each card looks bold.
@@ -15,11 +15,13 @@ const PANEL_HEX = ['#ef4e1b', '#1ba94c', '#1f49d6', '#ffd200', '#e22a1c']
 const panelHex = (match_no: number) => PANEL_HEX[match_no % PANEL_HEX.length]
 
 export function MatchCard({ match, prediction, onSave, onOpen, boosterActive, boosterRoundUsed, onToggleBooster }:
-  { match: Match; prediction?: Prediction; onSave: (h: number, a: number) => Promise<void>; onOpen?: () => void
+  { match: Match; prediction?: Prediction; onSave: (h: number, a: number, winnerSide?: 'home' | 'away' | null) => Promise<void>; onOpen?: () => void
     boosterActive?: boolean; boosterRoundUsed?: boolean; onToggleBooster?: () => void }) {
   const state = matchState(match)
+  const isKnockout = match.stage !== 'group'
   const [hp, setHp] = useState(prediction?.home_pred ?? 0)
   const [ap, setAp] = useState(prediction?.away_pred ?? 0)
+  const [winner, setWinner] = useState<'home' | 'away' | null>(prediction?.winner_side ?? null)
   const [touched, setTouched] = useState(false)
   const [saving, setSaving] = useState(false)
   const editable = state === 'open'
@@ -30,28 +32,37 @@ export function MatchCard({ match, prediction, onSave, onOpen, boosterActive, bo
   useEffect(() => {
     setHp(prediction?.home_pred ?? 0)
     setAp(prediction?.away_pred ?? 0)
-  }, [prediction?.home_pred, prediction?.away_pred])
+    setWinner(prediction?.winner_side ?? null)
+  }, [prediction?.home_pred, prediction?.away_pred, prediction?.winner_side])
 
   // Auto-save: debounce edits and persist them — no explicit "Lock prediction" button.
   // Baseline is null (not 0) when there's no saved prediction, so a deliberate 0-0
   // pick still differs from "untouched" and saves. `touched` gates out the mount pass
   // so we never persist the default 0-0 the user never actually entered.
   const savedH = prediction?.home_pred ?? null, savedA = prediction?.away_pred ?? null
+  const savedWinner = prediction?.winner_side ?? null
   useEffect(() => {
     if (!editable || !touched) return
-    if (hp === savedH && ap === savedA) return
+    if (hp === savedH && ap === savedA && winner === savedWinner) return
     const t = setTimeout(async () => {
       setSaving(true)
-      try { await onSave(hp, ap) } finally { setSaving(false) }
+      try { await (isKnockout ? onSave(hp, ap, winner) : onSave(hp, ap)) } finally { setSaving(false) }
     }, 700)
     return () => clearTimeout(t)
-  }, [hp, ap, editable, touched, savedH, savedA]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [hp, ap, winner, editable, touched, savedH, savedA, savedWinner]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // The giant flag numbers are the player's PREDICTION (editable while open); the
   // real/live score lives on the card background so it reads "your pick vs reality".
   const homeNum = editable ? hp : (prediction?.home_pred ?? null)
   const awayNum = editable ? ap : (prediction?.away_pred ?? null)
   const points = finished ? prediction?.points_awarded ?? null : null
+
+  // Knockout advancer picker: shown whenever a knockout prediction is a tie —
+  // including the default 0–0 — so the player is always prompted to pick who
+  // advances (a knockout can't end level). For a locked/finished card the tie
+  // check naturally requires a real saved prediction (homeNum is null without one).
+  const tie = homeNum != null && awayNum != null && homeNum === awayNum
+  const showPicker = isKnockout && tie
 
   // Booster badge state for the header (open/locked only — finished uses the avatar swap):
   //  active → this match is the player's booster; available → round free OR booster still
@@ -93,10 +104,20 @@ export function MatchCard({ match, prediction, onSave, onOpen, boosterActive, bo
       </div>
 
       {/* Flags + giant prediction numbers, full-bleed with a center divider */}
-      <div className="relative flex-1 min-h-0 flex items-stretch border-t-[3px] border-ink">
+      <div className="relative flex-1 min-h-0 flex items-stretch border-t-[3px] border-ink overflow-hidden">
         <FlagPanel code={match.home_code} label={match.home_label} value={homeNum} editable={editable} onChange={n => { setHp(n); setTouched(true) }} />
         <div className="w-[3px] bg-ink self-stretch flex-none" />
         <FlagPanel code={match.away_code} label={match.away_label} value={awayNum} editable={editable} onChange={n => { setAp(n); setTouched(true) }} />
+        <AnimatePresence>
+          {showPicker && (
+            <WinnerPicker
+              homeLabel={match.home_label} awayLabel={match.away_label}
+              homeCode={match.home_code} awayCode={match.away_code}
+              value={winner} editable={editable}
+              onChange={side => { setWinner(side); setTouched(true) }}
+            />
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Points star — centered on the whole card (not just the flags area) */}

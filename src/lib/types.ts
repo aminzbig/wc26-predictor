@@ -38,6 +38,7 @@ export interface Lineup { formation: string | null; coach: string | null; startX
 export interface Prediction {
   id: string; player_id: string; match_id: string
   home_pred: number; away_pred: number; points_awarded: number | null
+  winner_side?: 'home' | 'away' | null
 }
 export interface Booster {
   player_id: string; match_id: string; stage: Stage; created_at: string

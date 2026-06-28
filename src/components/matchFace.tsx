@@ -3,10 +3,13 @@
 // so the two stay identical. Outlines are the app standard: border-[3px] border-ink.
 import { useEffect, useRef, useState, type MouseEvent as RMouseEvent } from 'react'
 import { createPortal } from 'react-dom'
+import { motion } from 'framer-motion'
+import { Trophy } from 'lucide-react'
 import type { Match } from '../lib/types'
 import { supabase } from '../lib/supabase'
 import { Avatar } from './Avatar'
 import { BoosterBadge } from './BoosterBadge'
+import { useTapNotSwipe } from './tapNotSwipe'
 
 // "Stadium · City" from API-Football's fixture.venue — whichever parts we have.
 function venueLine(m: Match): string | null {
@@ -148,19 +151,18 @@ export function FlagPanel({ code, label, value, editable, onChange }: {
   const numCls = 'font-display text-white leading-none text-[clamp(64px,calc(var(--app-vh)*0.20),176px)]'
   const shadow = { textShadow: '0 3px 12px rgba(0,0,0,.75), 0 0 6px rgba(0,0,0,.6)' } as const
 
-  // Tap vs. swipe on the number:
-  //  • By default the number is a plain <div> overlay, so a drag that starts on it
-  //    passes straight through to the deck's framer-motion drag — the card swipes
-  //    just like dragging anywhere else on it.
-  //  • A deliberate TAP (pointer travels < SWIPE_PX) focuses the real <input> and
-  //    enters edit mode. focus() runs inside the tap gesture, so iOS opens the
-  //    keyboard. The input sits behind with pointer-events:none until then, so it
-  //    never intercepts a swipe.
-  const SWIPE_PX = 10
+  // Tap vs. swipe on the number (see useTapNotSwipe): a drag passes straight
+  // through to the deck's framer-motion drag; a deliberate TAP focuses the real
+  // <input> and enters edit mode. focus() runs inside the tap gesture, so iOS
+  // opens the keyboard. The input sits behind with pointer-events:none until
+  // then, so it never intercepts a swipe.
   const inputRef = useRef<HTMLInputElement>(null)
-  const down = useRef<{ x: number; y: number } | null>(null)
-  const swiped = useRef(false)
   const [editing, setEditing] = useState(false)
+  const tap = useTapNotSwipe(() => {
+    const el = inputRef.current
+    if (el) { el.focus(); el.select() }  // focus in-gesture → iOS keyboard
+    setEditing(true)
+  })
 
   return (
     <div className="relative flex-1 min-w-0 overflow-hidden bg-paper">
@@ -192,18 +194,7 @@ export function FlagPanel({ code, label, value, editable, onChange }: {
           <div
             data-testid="num-overlay"
             className={`absolute inset-0 grid place-items-center ${editing ? 'opacity-0 pointer-events-none' : 'cursor-text'}`}
-            onPointerDown={e => { down.current = { x: e.clientX, y: e.clientY }; swiped.current = false }}
-            onPointerMove={e => {
-              if (!down.current || swiped.current) return
-              if (Math.hypot(e.clientX - down.current.x, e.clientY - down.current.y) > SWIPE_PX) swiped.current = true
-            }}
-            onClick={e => {
-              if (swiped.current) return          // it was a swipe → let the deck slide; don't edit
-              e.stopPropagation()                  // a tap → edit; don't open the detail
-              const el = inputRef.current
-              if (el) { el.focus(); el.select() }  // focus in-gesture → iOS keyboard
-              setEditing(true)
-            }}
+            {...tap}
           >
             <span className={numCls} style={shadow}>{value == null ? '–' : value}</span>
           </div>
@@ -240,6 +231,78 @@ export function TeamNameBar({ home, away, big, full, divider = 'bg-paper/25' }: 
           bottom border so it meets the same-coloured bottom zone, making the line
           read as reaching the bottom of the card. */}
       <span aria-hidden className={`absolute top-0 -bottom-[6px] left-1/2 -translate-x-1/2 w-[3px] ${divider}`} />
+    </div>
+  )
+}
+
+type Side = 'home' | 'away'
+
+// Slide-up "who advances" band for a knockout tie. Rendered inside the (relative,
+// overflow-hidden) flags container, pinned just above TeamNameBar, so it appears
+// to emerge from behind the names. The parent wraps it in <AnimatePresence> and
+// mounts it only when it should show. Tap selects; a swipe passes through
+// (useTapNotSwipe) so the deck still slides / the modal still scrolls.
+export function WinnerPicker({ homeLabel, awayLabel, homeCode, awayCode, value, editable, onChange }: {
+  homeLabel: string | null; awayLabel: string | null
+  homeCode: string | null; awayCode: string | null
+  value: Side | null; editable?: boolean; onChange?: (side: Side) => void
+}) {
+  const homeTap = useTapNotSwipe(() => { if (editable) onChange?.('home') })
+  const awayTap = useTapNotSwipe(() => { if (editable) onChange?.('away') })
+  const needs = editable && value == null
+
+  const half = (side: Side, label: string | null, code: string | null, handlers: ReturnType<typeof useTapNotSwipe>) => {
+    const chosen = value === side
+    const dimmed = value != null && !chosen
+    const mark = <span className="font-display text-[15px] leading-none">{side === 'home' ? '▸' : '◂'}</span>
+    const flag = code
+      ? <span className={`fi fis fi-${code} !w-[26px] !h-[18px] bg-cover border-2 ${chosen ? 'border-ink' : 'border-paper'} flex-none`} />
+      : null
+    return (
+      <div
+        {...(editable ? handlers : {})}
+        role={editable ? 'button' : undefined}
+        aria-label={`${label ?? 'team'} advances`}
+        className={`flex-1 flex items-center justify-center gap-2 select-none ${editable ? 'cursor-pointer' : ''} ${chosen ? 'bg-yellow text-ink' : 'text-paper'} ${dimmed ? 'opacity-40' : ''}`}
+      >
+        {side === 'away' && mark}
+        {side === 'home' && flag}
+        <span className="font-display text-[22px] uppercase leading-none">{abbr3(label)}</span>
+        {side === 'away' && flag}
+        {side === 'home' && mark}
+      </div>
+    )
+  }
+
+  return (
+    <motion.div
+      initial={{ y: '115%' }} animate={{ y: 0 }} exit={{ y: '115%' }}
+      transition={{ type: 'spring', stiffness: 320, damping: 32 }}
+      className={`absolute inset-x-0 bottom-0 z-[6] bg-ink border-t-[3px] border-ink ${needs ? 'winner-needs' : ''}`}
+    >
+      <div className="h-[18px] grid place-items-center bg-black/25 font-sans font-900 text-[9px] uppercase tracking-[0.22em] text-yellow leading-none">
+        {value ? `✓ ${abbr3(value === 'home' ? homeLabel : awayLabel)} goes through` : 'Who advances?'}
+      </div>
+      <div className="winner-choices relative flex h-[46px] overflow-hidden">
+        {half('home', homeLabel, homeCode, homeTap)}
+        {half('away', awayLabel, awayCode, awayTap)}
+        <span aria-hidden className="absolute top-0 bottom-0 left-1/2 -translate-x-1/2 w-[3px] bg-blue z-[2] pointer-events-none" />
+      </div>
+    </motion.div>
+  )
+}
+
+// Detail-view summary: surfaces the chosen advancer as the match winner.
+export function AdvancerBadge({ side, homeLabel, awayLabel, homeCode, awayCode }: {
+  side: Side; homeLabel: string | null; awayLabel: string | null; homeCode: string | null; awayCode: string | null
+}) {
+  const label = side === 'home' ? homeLabel : awayLabel
+  const code = side === 'home' ? homeCode : awayCode
+  return (
+    <div className="mt-2 inline-flex items-center gap-2 bg-ink text-yellow border-[3px] border-yellow px-3 py-2">
+      <Trophy size={16} />
+      {code && <span className={`fi fis fi-${code} !w-[24px] !h-[17px] bg-cover border-2 border-yellow flex-none`} />}
+      <span className="font-display text-[16px] uppercase tracking-wide leading-none">{label ?? '—'} to advance</span>
     </div>
   )
 }

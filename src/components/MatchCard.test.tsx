@@ -1,6 +1,7 @@
 import { render, screen, fireEvent, act } from '@testing-library/react'
 import { vi } from 'vitest'
 import { MatchCard } from './MatchCard'
+import { tap } from '../test/pointer'
 import type { Match } from '../lib/types'
 
 const m: Match = {
@@ -55,4 +56,48 @@ test('active booster shows a remove control and the rainbow outline', () => {
 test('booster already used this round renders a disabled badge', () => {
   render(<MatchCard match={m} onSave={async () => {}} boosterRoundUsed onToggleBooster={() => {}} />)
   expect(screen.getByRole('button', { name: /already used/i })).toBeDisabled()
+})
+
+const ko: Match = { ...m, stage: 'r16', group_label: null }
+
+test('fresh knockout card (default 0-0, no prediction) shows the advancer picker', () => {
+  render(<MatchCard match={ko} prediction={undefined} onSave={async () => {}} />)
+  expect(screen.getByLabelText(/Brazil advances/i)).toBeInTheDocument()
+})
+
+test('knockout tie prediction shows the advancer picker', () => {
+  render(<MatchCard match={ko}
+    prediction={{ id: 'p', player_id: 'x', match_id: '1', home_pred: 1, away_pred: 1, points_awarded: null }}
+    onSave={async () => {}} />)
+  expect(screen.getByLabelText(/Brazil advances/i)).toBeInTheDocument()
+  expect(screen.getByLabelText(/Croatia advances/i)).toBeInTheDocument()
+})
+
+test('knockout decisive prediction hides the advancer picker', () => {
+  render(<MatchCard match={ko}
+    prediction={{ id: 'p', player_id: 'x', match_id: '1', home_pred: 2, away_pred: 1, points_awarded: null }}
+    onSave={async () => {}} />)
+  expect(screen.queryByLabelText(/Brazil advances/i)).toBeNull()
+})
+
+test('group-stage tie shows no advancer picker', () => {
+  render(<MatchCard match={m}
+    prediction={{ id: 'p', player_id: 'x', match_id: '1', home_pred: 1, away_pred: 1, points_awarded: null }}
+    onSave={async () => {}} />)
+  expect(screen.queryByLabelText(/Brazil advances/i)).toBeNull()
+})
+
+test('choosing an advancer auto-saves with the winner_side', async () => {
+  vi.useFakeTimers()
+  try {
+    const onSave = vi.fn(async () => {})
+    render(<MatchCard match={ko}
+      prediction={{ id: 'p', player_id: 'x', match_id: '1', home_pred: 1, away_pred: 1, points_awarded: null }}
+      onSave={onSave} />)
+    tap(screen.getByLabelText(/Croatia advances/i))
+    await act(async () => { vi.advanceTimersByTime(800) })
+    expect(onSave).toHaveBeenCalledWith(1, 1, 'away')
+  } finally {
+    vi.useRealTimers()
+  }
 })

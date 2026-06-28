@@ -1,6 +1,10 @@
 import { render, screen } from '@testing-library/react'
-import { TopThreePredictors, PensLine } from './matchFace'
+import { vi } from 'vitest'
+import { TopThreePredictors, PensLine, FlagPanel, WinnerPicker, AdvancerBadge } from './matchFace'
+import { tap, swipe } from '../test/pointer'
 import type { Match } from '../lib/types'
+
+const PICK = { homeLabel: 'Brazil', awayLabel: 'Croatia', homeCode: 'br', awayCode: 'hr' }
 
 const finished: Match = {
   id: '1', match_no: 1, stage: 'group', group_label: 'C',
@@ -27,4 +31,42 @@ test('PensLine renders the penalty score when both are present', () => {
 test('PensLine renders nothing without a penalty score', () => {
   const { container } = render(<PensLine home={null} away={2} />)
   expect(container).toBeEmptyDOMElement()
+})
+
+test('FlagPanel: a tap focuses the score input, a swipe does not', () => {
+  render(<FlagPanel code="br" label="Brazil" value={1} editable onChange={vi.fn()} />)
+  const overlay = screen.getByTestId('num-overlay')
+  const input = screen.getByLabelText(/Brazil predicted score/i)
+
+  swipe(overlay)
+  expect(input).not.toHaveFocus()
+
+  tap(overlay)
+  expect(input).toHaveFocus()
+})
+
+test('WinnerPicker: tapping a side selects it', () => {
+  const onChange = vi.fn()
+  render(<WinnerPicker {...PICK} value={null} editable onChange={onChange} />)
+  tap(screen.getByLabelText(/Brazil advances/i))
+  expect(onChange).toHaveBeenCalledWith('home')
+})
+
+test('WinnerPicker: a swipe does not select (passes through)', () => {
+  const onChange = vi.fn()
+  render(<WinnerPicker {...PICK} value={null} editable onChange={onChange} />)
+  swipe(screen.getByLabelText(/Croatia advances/i))
+  expect(onChange).not.toHaveBeenCalled()
+})
+
+test('WinnerPicker: read-only does not fire onChange on tap', () => {
+  const onChange = vi.fn()
+  render(<WinnerPicker {...PICK} value="home" editable={false} onChange={onChange} />)
+  tap(screen.getByLabelText(/Brazil advances/i))
+  expect(onChange).not.toHaveBeenCalled()
+})
+
+test('AdvancerBadge: names the advancing team', () => {
+  render(<AdvancerBadge side="away" {...PICK} />)
+  expect(screen.getByText(/Croatia to advance/i)).toBeInTheDocument()
 })

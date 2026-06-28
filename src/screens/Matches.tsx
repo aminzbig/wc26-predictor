@@ -109,7 +109,7 @@ export function Matches() {
         <MatchDetail
           match={selectedLive}
           prediction={byMatch[selectedLive.id]}
-          onSave={(h, a) => save(selectedLive.id, h, a)}
+          onSave={(h, a, winnerSide) => save(selectedLive.id, h, a, winnerSide)}
           onClose={() => setSelected(null)}
         />
       )}

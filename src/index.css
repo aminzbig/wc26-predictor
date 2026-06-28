@@ -179,3 +179,30 @@ input[type='number'] { -moz-appearance: textfield; appearance: textfield; paddin
 @media (prefers-reduced-motion: reduce) {
   .booster-shine::before { animation: none; }
 }
+
+/* Knockout advancer picker — gloss sweep + pulsing ring while no side is chosen,
+   modeled on .booster-shine. Gated by .winner-needs on the band. */
+.winner-needs .winner-choices::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  width: 38%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent);
+  transform: translateX(-160%) skewX(-18deg);
+  pointer-events: none;
+  z-index: 3;
+  animation: winner-shine 2.7s ease-in-out infinite;
+}
+@keyframes winner-shine {
+  0%   { transform: translateX(-160%) skewX(-18deg); }
+  34%  { transform: translateX(360%) skewX(-18deg); }
+  100% { transform: translateX(360%) skewX(-18deg); }
+}
+.winner-needs { animation: winner-pulse 1.7s ease-in-out infinite; }
+@keyframes winner-pulse {
+  0%, 100% { box-shadow: inset 0 0 0 2px rgba(255, 210, 0, 0); }
+  50%      { box-shadow: inset 0 0 0 2px rgba(255, 210, 0, 0.95); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .winner-needs .winner-choices::after, .winner-needs { animation: none; }
+}
