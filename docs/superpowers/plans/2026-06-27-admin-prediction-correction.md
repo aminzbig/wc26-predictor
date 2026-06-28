@@ -8,6 +8,18 @@
 
 **Tech Stack:** React 18 + TypeScript + Vite, react-router-dom, Vitest + @testing-library/react, Supabase (Postgres + RLS + RPC), Tailwind.
 
+> **⚠️ Correction (post-review).** Task 1 below originally introduced a
+> `score_points` helper and refactored `recompute_match`, on the mistaken belief
+> that production scoring was the best-of-three formula from `0003`/`0004`. It is
+> not: current scoring is the FIFA-additive + booster + way-off model from
+> `0013`/`0022`/`0023`, and three of its components (risky bonus, booster,
+> way-off) cannot be expressed by a per-row scalar helper. The shipped migration
+> `supabase/migrations/0027_admin_set_prediction.sql` therefore **restores the
+> canonical `recompute_match` unchanged, drops `score_points`, and makes
+> `admin_set_prediction` delegate to `recompute_match`**. See the design doc's
+> "Scoring: reuse the canonical scorer" section. Read Task 1's SQL below as
+> superseded by that file; Tasks 2 and 3 are unaffected.
+
 ## Global Constraints
 
 - Database migrations are NOT applied by CI. Apply new files in `supabase/migrations/` to the Fifa26 project (ref `ekgaegdtozqeziyycoul`) via the Management API SQL endpoint with the owner PAT stored at `~/.claude/projects/-Users-amir-WORX-AmirAlaviWorx-WorldcupPrediction-wc26-predictor/memory/supabase-fifa26-deploy-token.md`. There is no local DB — the dev app points at this cloud project, so the migration must be applied for manual testing.
