@@ -1,4 +1,4 @@
-import type { Match, Stage } from './types'
+import type { Match, Stage, WcRunGame } from './types'
 import { computeStandings } from './standings'
 
 export interface BracketSlot {
@@ -208,6 +208,37 @@ export function resolveBracket(matches: Match[]): BracketMatch[] {
   })
 }
 
+// A team's run in this tournament: every finished match it played before
+// `beforeMs`, oldest→newest, from that team's perspective. Derived from the
+// loaded matches so knockout detail cards can show a team's path even though the
+// server only fetches wc_run for fixture-mapped (real-team) rows. Per-game stats
+// (possession / shots / corners) aren't in our match rows, so they're left null.
+function deriveWcRun(code: string | null, matches: Match[], beforeMs: number): WcRunGame[] {
+  if (!code) return []
+  return matches
+    .filter(m => m.status === 'finished' && m.home_score != null && m.away_score != null
+      && (m.home_code === code || m.away_code === code)
+      && new Date(m.kickoff_at).getTime() < beforeMs)
+    .sort((a, b) => new Date(a.kickoff_at).getTime() - new Date(b.kickoff_at).getTime())
+    .map(m => {
+      const isHome = m.home_code === code
+      const gf = (isHome ? m.home_score : m.away_score)!
+      const ga = (isHome ? m.away_score : m.home_score)!
+      let result: 'W' | 'D' | 'L' = gf > ga ? 'W' : gf < ga ? 'L' : 'D'
+      // A level knockout game is decided on penalties — reflect that in the result.
+      if (gf === ga && m.home_pens != null && m.away_pens != null) {
+        const myPens = isHome ? m.home_pens : m.away_pens
+        const oppPens = isHome ? m.away_pens : m.home_pens
+        result = myPens > oppPens ? 'W' : myPens < oppPens ? 'L' : 'D'
+      }
+      return {
+        id: m.match_no ?? 0, date: m.kickoff_at,
+        opp: (isHome ? m.away_label : m.home_label) ?? '—',
+        gf, ga, result, poss: null, sot: null, cor: null,
+      }
+    })
+}
+
 // Enrich knockout matches with the teams projected from live standings, so the
 // Matches deck/grid/detail show the same countries as the Standings bracket
 // instead of bare seed labels ("1A", "W74"). Group matches pass through
@@ -216,9 +247,16 @@ export function resolveBracket(matches: Match[]): BracketMatch[] {
 // projection covers ALL rounds: R32 fills from group standings; R16/QF/SF/Final
 // fill from W{n}/L{n} once the earlier-round results are in. An unresolved slot
 // keeps its seed label so the card still reads "1A vs 2B".
+//
+// We also derive each knockout team's World Cup run from the loaded matches so
+// the detail card shows their path so far (group games, then earlier knockout
+// rounds) — restoring the run section the server can't populate for rows whose
+// team isn't fixture-mapped yet. A DB-provided run (which carries per-game stats)
+// always wins over the derived one.
 export function projectMatchTeams(matches: Match[]): Match[] {
   const byId = new Map(resolveBracket(matches).map(b => [b.id, b]))
-  return matches.map(m => {
+  // Pass 1: fill knockout team codes/labels from the projection.
+  const projected = matches.map(m => {
     if (m.stage === 'group') return m
     const b = byId.get(m.id)
     if (!b) return m
@@ -228,6 +266,17 @@ export function projectMatchTeams(matches: Match[]): Match[] {
       home_label: m.home_code ? m.home_label : (b.home.name ?? m.home_label),
       away_code: m.away_code ?? b.away.code,
       away_label: m.away_code ? m.away_label : (b.away.name ?? m.away_label),
+    }
+  })
+  // Pass 2: derive each knockout team's World Cup run from the now-projected list
+  // (so prior knockout rounds, which only have codes after pass 1, are included).
+  return projected.map(m => {
+    if (m.stage === 'group') return m
+    const k = new Date(m.kickoff_at).getTime()
+    return {
+      ...m,
+      home_wc_run: m.home_wc_run ?? deriveWcRun(m.home_code, projected, k),
+      away_wc_run: m.away_wc_run ?? deriveWcRun(m.away_code, projected, k),
     }
   })
 }

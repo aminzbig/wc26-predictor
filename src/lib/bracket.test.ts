@@ -181,4 +181,42 @@ describe('projectMatchTeams', () => {
     expect(m.home_label).toBe('USA')
     expect(m.away_code).toBe('ar')   // still projected
   })
+
+  test('derives each knockout team World Cup run from finished tournament games', () => {
+    // mx played 3 finished Group A games in twoDoneGroups(); they become its WC run.
+    const out = projectMatchTeams([
+      ...twoDoneGroups(),
+      mk({ id: 'r32', match_no: 73, stage: 'r32', home_label: '1A', away_label: '2B',
+        kickoff_at: '2026-07-01T00:00:00Z', multiplier: 1.5 }),
+    ])
+    const m = out.find(x => x.id === 'r32')!
+    const run = m.home_wc_run! // mx (Group A winner)
+    expect(run.length).toBe(4) // mx appears in 4 finished Group A games in the fixture
+    expect(run.every(x => x.opp !== 'mx')).toBe(true) // opponent is always the other side
+    // every game involves mx, oldest→newest, with W/D/L from mx's perspective
+    expect(run.every(x => x.result === 'W' || x.result === 'D' || x.result === 'L')).toBe(true)
+    expect(run.some(x => x.gf != null && x.ga != null)).toBe(true)
+  })
+
+  test('only counts games before the knockout kickoff', () => {
+    const out = projectMatchTeams([
+      ...twoDoneGroups(),
+      mk({ id: 'r32', match_no: 73, stage: 'r32', home_label: '1A', away_label: '2B',
+        kickoff_at: '2020-01-01T00:00:00Z', multiplier: 1.5 }), // before all group games
+    ])
+    const m = out.find(x => x.id === 'r32')!
+    expect(m.home_wc_run).toEqual([])
+  })
+
+  test('keeps a DB-provided wc_run (with stats) instead of deriving', () => {
+    const dbRun = [{ id: 9, date: '2026-06-12T00:00:00Z', opp: 'X', gf: 1, ga: 0,
+      result: 'W' as const, poss: '60%', sot: 5, cor: 4 }]
+    const out = projectMatchTeams([
+      ...twoDoneGroups(),
+      mk({ id: 'r32', match_no: 73, stage: 'r32', home_label: '1A', away_label: '2B',
+        kickoff_at: '2026-07-01T00:00:00Z', multiplier: 1.5, home_wc_run: dbRun }),
+    ])
+    const m = out.find(x => x.id === 'r32')!
+    expect(m.home_wc_run).toBe(dbRun)
+  })
 })
