@@ -16,8 +16,14 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-      - run: npm install --no-save @supabase/supabase-js@2
+      - run: npm install --no-save @supabase/supabase-js@2 tsx
       - run: node scripts/auto-score.mjs
+        env:
+          SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      # Persist resolved knockout teams (after auto-score finalizes winners, before
+      # fetch-football maps them to fixtures) so live scores flow for knockout rounds.
+      - run: npx tsx scripts/resolve-knockout.ts --apply
         env:
           SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
