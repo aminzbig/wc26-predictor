@@ -68,9 +68,14 @@ but the same helper is used everywhere.
 
 ### 3. Guard
 
-`WinnerFlag` returns `null` when `side` is falsy. `winner_side` is only ever set
-for level knockout scorelines, so no extra stage / `home_pred === away_pred` check
-is required — a non-tie pick simply has no `winner_side`.
+`WinnerFlag` returns `null` unless `side` is set **and** the pick is a level
+scoreline (`home === away`). The tie check is required: the prediction write path
+(`MatchCard` / `MatchDetail` autosave) does not clear `winner_side` when a player
+edits a tie (e.g. 1–1, picked home) into a decisive score (e.g. 2–1), so a stale
+`winner_side` can persist in the DB next to a decisive scoreline. Without the tie
+guard the board would wrongly render `2–1 🇧🇷`. (The deeper write-path data-staleness
+is pre-existing and out of scope for this feature; the display guard neutralizes its
+visible effect.)
 
 ## Out of scope (YAGNI)
 
