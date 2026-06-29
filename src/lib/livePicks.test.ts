@@ -41,6 +41,25 @@ const farOffRows = [
   { home_pred: 2, away_pred: 1, name: 'Safe' },   // vs live 1-0: dist 1 -> outcome+goalDiff = 15
 ]
 
+describe('rankLivePicks knockout', () => {
+  // Brazil(home) leads 2-1 in a knockout tie. Pen backs the leading side; the live
+  // board must already credit the +10 result point instead of withholding it to FT.
+  const koRows = [
+    { name: 'Pens', home_pred: 1, away_pred: 1, winner_side: 'home' as const }, // backs Brazil on pens -> 15
+    { name: 'Group', home_pred: 1, away_pred: 1, winner_side: null },           // no side -> only scoreline crumb 5
+  ]
+  test('knockout flag: level pick backing the live leader projects the result point', () => {
+    const out = rankLivePicks(koRows, { home: 2, away: 1 }, 1, false, true)
+    expect(out.find(r => r.name === 'Pens')!.proj).toBe(15)
+    expect(out.find(r => r.name === 'Group')!.proj).toBe(5)
+    expect(out.map(r => r.name)).toEqual(['Pens', 'Group'])
+  })
+  test('without the knockout flag the result point is withheld (group behavior)', () => {
+    const out = rankLivePicks(koRows, { home: 2, away: 1 })
+    expect(out.find(r => r.name === 'Pens')!.proj).toBe(5)
+  })
+})
+
 describe('rankLivePicks far-off', () => {
   test('rule off: far-off bold pick still scores its outcome points', () => {
     const out = rankLivePicks(farOffRows, { home: 1, away: 0 }, 1, false)

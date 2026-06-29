@@ -99,7 +99,7 @@ export function PicksBoard({ rows, match }: { rows: PeoplePick[]; match: Match }
   // LIVE: rank by projected points from the current live score.
   // FINISHED / pre-kickoff: existing behavior (rank by awarded points, or none).
   const ranked = live
-    ? rankLivePicks(rows, { home: lh, away: la }, match.multiplier ?? 1, applyFarOff).map(r => ({
+    ? rankLivePicks(rows, { home: lh, away: la }, match.multiplier ?? 1, applyFarOff, match.stage !== 'group').map(r => ({
         ...r, points: r.proj, tier: resultTier(r.home_pred, r.away_pred, lh, la, applyFarOff),
       }))
     : rows.map((r) => {

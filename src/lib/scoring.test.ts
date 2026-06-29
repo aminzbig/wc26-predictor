@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { basePoints, projectedPoints, isFarOff, farOffApplies, advancerPoint, predictedAdvancer, actualAdvancer, FAR_OFF_RULE_FROM } from './scoring'
+import { basePoints, projectedPoints, projectedPointsKnockout, isFarOff, farOffApplies, advancerPoint, predictedAdvancer, actualAdvancer, FAR_OFF_RULE_FROM } from './scoring'
 
 // FIFA additive model: outcome 10, goalsHome 5, goalsAway 5, goalDiff 5, scoreBonus 5, risky 10.
 describe('basePoints (FIFA additive)', () => {
@@ -135,5 +135,40 @@ describe('advancerPoint', () => {
   })
   test('correct shoot-out winner on a tie pick -> +10', () => {
     expect(advancerPoint({ hp: 1, ap: 1, winnerSide: 'home' }, { hs: 1, as: 1, hpens: 5, apens: 4 })).toBe(10)
+  })
+})
+
+// Live KNOCKOUT projection: the result point follows the projected advancer (the
+// side currently ahead), so a level pick that backs the leading team on penalties
+// earns the +10 the moment that team leads — not only at full time.
+describe('projectedPointsKnockout (live KO projection)', () => {
+  test('level pick backing the leading side gets the result point live', () => {
+    // Brazil(home) leads 2-1. Pick 1-1 + winnerSide home: goalsAway 1==1 (+5) and
+    // projected advancer home == live leader home (+10) -> 15.
+    expect(projectedPointsKnockout({ hp: 1, ap: 1, winnerSide: 'home' }, { hs: 2, as: 1 })).toBe(15)
+  })
+  test('group formula would have withheld that result point', () => {
+    // Same inputs through the group projection: tie sign != home-ahead sign, so only
+    // the goalsAway crumb (5) — this is the under-count the live board showed.
+    expect(projectedPoints({ hp: 1, ap: 1 }, { hs: 2, as: 1 })).toBe(5)
+  })
+  test('level pick backing the trailing side gets no result point', () => {
+    // Brazil leads 2-1 but the pick backs away -> projected advancer away != home.
+    expect(projectedPointsKnockout({ hp: 1, ap: 1, winnerSide: 'away' }, { hs: 2, as: 1 })).toBe(5)
+  })
+  test('level live score: advancer undecided, no result point for anyone', () => {
+    // 1-1 vs 1-1 is an exact scoreline (20) but the shoot-out is undecided -> no +10.
+    expect(projectedPointsKnockout({ hp: 1, ap: 1, winnerSide: 'home' }, { hs: 1, as: 1 })).toBe(20)
+  })
+  test('decisive pick for the leading side still scores the result point', () => {
+    expect(projectedPointsKnockout({ hp: 1, ap: 0 }, { hs: 2, as: 1 })).toBe(15) // advancer home + goalDiff
+  })
+  test('applies multiplier and boost', () => {
+    expect(projectedPointsKnockout({ hp: 1, ap: 1, winnerSide: 'home' }, { hs: 2, as: 1 }, 2, 2)).toBe(60)
+  })
+  test('result point is exempt from the far-off rule, scoreline is not', () => {
+    // Pick 0-0 + home, live 6-0: far off (dist 6). Scoreline zeroed, but the
+    // projected advancer (home leads) still earns +10.
+    expect(projectedPointsKnockout({ hp: 0, ap: 0, winnerSide: 'home' }, { hs: 6, as: 0 }, 1, 1, true)).toBe(10)
   })
 })

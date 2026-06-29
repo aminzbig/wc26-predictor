@@ -99,3 +99,31 @@ export function projectedPoints(
 ): number {
   return Math.round(basePoints(p, r, FIFA_POINTS, false, applyFarOff) * multiplier * boost)
 }
+
+// Live projection for a KNOCKOUT pick. Unlike projectedPoints() (which mirrors the
+// group played-score outcome), the result point here follows the PROJECTED ADVANCER:
+// the side currently ahead on the live scoreline (the shoot-out is decided only at
+// full time, so a level live score leaves the advancer — and the +10 — undecided).
+// This is what makes a level prediction that backs a team on penalties earn its +10
+// the moment that team leads, matching advancerPoint() at full time instead of
+// snapping up only when the match finishes. The +5 scoreline components are identical
+// to group play and obey the way-off rule; the result point, like advancerPoint(), is
+// exempt from it. risky is still omitted (FT only).
+export function projectedPointsKnockout(
+  p: { hp: number; ap: number; winnerSide?: 'home' | 'away' | null },
+  r: { hs: number; as: number },
+  multiplier = 1,
+  boost = 1,
+  applyFarOff = false,
+): number {
+  const scoreline = applyFarOff && isFarOff(p, r)
+    ? 0
+    : (p.hp === r.hs ? FIFA_POINTS.goalsHome : 0)
+      + (p.ap === r.as ? FIFA_POINTS.goalsAway : 0)
+      + (p.hp - p.ap === r.hs - r.as ? FIFA_POINTS.goalDiff : 0)
+      + (p.hp === r.hs && p.ap === r.as ? FIFA_POINTS.scoreBonus : 0)
+  const pred = predictedAdvancer(p)
+  const liveAdvancer = actualAdvancer({ hs: r.hs, as: r.as })
+  const result = pred != null && pred === liveAdvancer ? ADVANCER_POINT : 0
+  return Math.round((scoreline + result) * multiplier * boost)
+}
