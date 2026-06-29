@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { basePoints, projectedPoints, isFarOff, farOffApplies, FAR_OFF_RULE_FROM } from './scoring'
+import { basePoints, projectedPoints, isFarOff, farOffApplies, advancerPoint, predictedAdvancer, actualAdvancer, FAR_OFF_RULE_FROM } from './scoring'
 
 // FIFA additive model: outcome 10, goalsHome 5, goalsAway 5, goalDiff 5, scoreBonus 5, risky 10.
 describe('basePoints (FIFA additive)', () => {
@@ -93,5 +93,47 @@ describe('far-off rule', () => {
     // 5-1 vs live 1-0, multiplier 2, boost 2 -> normally 10*2*2=40, far-off -> 0
     expect(projectedPoints({ hp: 5, ap: 1 }, { hs: 1, as: 0 }, 2, 2)).toBe(40)        // rule off
     expect(projectedPoints({ hp: 5, ap: 1 }, { hs: 1, as: 0 }, 2, 2, true)).toBe(0)   // rule on
+  })
+})
+
+// Knockout advancer: the +10 result point follows who goes through.
+describe('predictedAdvancer / actualAdvancer', () => {
+  test('decisive prediction implies its higher side', () => {
+    expect(predictedAdvancer({ hp: 2, ap: 1 })).toBe('home')
+    expect(predictedAdvancer({ hp: 0, ap: 1 })).toBe('away')
+  })
+  test('tie prediction takes the tapped winnerSide (null if none)', () => {
+    expect(predictedAdvancer({ hp: 1, ap: 1, winnerSide: 'away' })).toBe('away')
+    expect(predictedAdvancer({ hp: 1, ap: 1, winnerSide: null })).toBe(null)
+    expect(predictedAdvancer({ hp: 1, ap: 1 })).toBe(null)
+  })
+  test('actual advancer is the score winner, or the shoot-out winner if level', () => {
+    expect(actualAdvancer({ hs: 0, as: 1 })).toBe('away')
+    expect(actualAdvancer({ hs: 2, as: 1 })).toBe('home')
+    expect(actualAdvancer({ hs: 1, as: 1, hpens: 4, apens: 3 })).toBe('home')
+    expect(actualAdvancer({ hs: 1, as: 1, hpens: 2, apens: 4 })).toBe('away')
+    expect(actualAdvancer({ hs: 1, as: 1 })).toBe(null) // level, no shoot-out recorded
+  })
+})
+
+describe('advancerPoint', () => {
+  test('Amir Alavi case: 1-1 + Canada(away), Canada wins 0-1 in regulation -> +10', () => {
+    expect(advancerPoint({ hp: 1, ap: 1, winnerSide: 'away' }, { hs: 0, as: 1 })).toBe(10)
+  })
+  test('decisive correct pick (0-1, away wins) -> +10', () => {
+    expect(advancerPoint({ hp: 0, ap: 1 }, { hs: 0, as: 1 })).toBe(10)
+  })
+  test('Gap B: decisive 2-1 for the side that wins on penalties -> +10', () => {
+    // predicted away 2-1... away higher; match 1-1, away wins shoot-out
+    expect(advancerPoint({ hp: 1, ap: 2 }, { hs: 1, as: 1, hpens: 3, apens: 5 })).toBe(10)
+  })
+  test('wrong side -> 0', () => {
+    expect(advancerPoint({ hp: 2, ap: 1 }, { hs: 0, as: 1 })).toBe(0)
+  })
+  test('tie pick with no side tapped -> 0', () => {
+    expect(advancerPoint({ hp: 1, ap: 1, winnerSide: null }, { hs: 0, as: 1 })).toBe(0)
+  })
+  test('correct shoot-out winner on a tie pick -> +10', () => {
+    expect(advancerPoint({ hp: 1, ap: 1, winnerSide: 'home' }, { hs: 1, as: 1, hpens: 5, apens: 4 })).toBe(10)
   })
 })
