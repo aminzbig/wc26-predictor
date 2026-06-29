@@ -1,6 +1,6 @@
 import { Fragment, useMemo } from 'react'
 import type { Match, Stage } from '../lib/types'
-import { resolveBracket, type BracketMatch } from '../lib/bracket'
+import { resolveBracket, bracketOrder, type BracketMatch } from '../lib/bracket'
 import { KnockoutCard } from './KnockoutCard'
 
 // The bracket as horizontal columns (Google-style): Round of 32 → … → Final,
@@ -90,11 +90,14 @@ function Column({ title, count, cards, third }:
 export function KnockoutBracket({ matches }: { matches: Match[] }) {
   const bracket = useMemo(() => resolveBracket(matches), [matches])
   const byStage = useMemo(() => {
+    // Order each column by bracket-tree position (not match_no) so cards sit beside
+    // the cards that feed them and the elbow connectors are truthful.
+    const order = bracketOrder(bracket)
     const out: Record<string, BracketMatch[]> = {}
     for (const r of ROUNDS) {
       out[r.stage] = bracket
         .filter(b => b.stage === r.stage)
-        .sort((a, b) => (a.match_no ?? 0) - (b.match_no ?? 0))
+        .sort((a, b) => (order.get(a.match_no ?? -1) ?? 0) - (order.get(b.match_no ?? -1) ?? 0))
     }
     return out
   }, [bracket])

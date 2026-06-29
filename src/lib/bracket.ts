@@ -190,9 +190,20 @@ export function resolveBracket(matches: Match[]): BracketMatch[] {
     return slot(null, false)
   }
 
+  // A side is resolved from its REAL team first: once a slot is decided, the
+  // server (resolve-knockout.ts) writes the actual team into home_code and replaces
+  // the seed label with the team NAME — which no longer matches any seed pattern, so
+  // resolveSlot() alone would (wrongly) yield TBD. A persisted team is locked in, so
+  // it's confirmed. Only when no real team is set do we fall back to projecting from
+  // the seed label ('1A', 'W73', …).
+  const resolveSide = (code: string | null, label: string | null): BracketSlot =>
+    code
+      ? { code, name: label ?? code, label: label ?? '', confirmed: true }
+      : resolveSlot(label)
+
   return ko.map(m => {
-    const home = resolveSlot(m.home_label)
-    const away = resolveSlot(m.away_label)
+    const home = resolveSide(m.home_code, m.home_label)
+    const away = resolveSide(m.away_code, m.away_label)
     const decided = decideMatch(home, away, m)
     if (m.match_no != null) resultByNo.set(m.match_no, decided)
     return {
@@ -206,6 +217,71 @@ export function resolveBracket(matches: Match[]): BracketMatch[] {
       winnerCode: decided.winner?.code ?? null,
     }
   })
+}
+
+// Vertical tree-order position for every knockout match, so a round's cards line
+// up directly beside the two cards that actually FEED them — the bracket connectors
+// are positional (card j is drawn as fed by cards 2j and 2j+1), so the columns must
+// be ordered by the tree, NOT by match_no. FIFA's match_no order is not tree order:
+// e.g. R16 #90 is W73 v W75, so #73 (a Canada win) feeds #90 even though #89 sorts
+// first by match_no. Returns match_no -> fractional position; sort each round
+// ascending by it.
+//
+// A feeder is found from the slot's seed label ('W73'/'L73'); once that game is
+// decided, resolve-knockout.ts overwrites the label with the team NAME, so we fall
+// back to matching the slot's team code against a previous-round winner. Robust to
+// an incomplete tree: anything not reachable from the Final keeps an arbitrary
+// (insertion-order) slot so the bracket still renders.
+const KO_STAGE_SEQ: Stage[] = ['r32', 'r16', 'qf', 'sf', 'final']
+
+export function bracketOrder(bracket: BracketMatch[]): Map<number, number> {
+  const byNo = new Map<number, BracketMatch>()
+  for (const b of bracket) if (b.match_no != null) byNo.set(b.match_no, b)
+
+  const prevStageMatches = (s: Stage): BracketMatch[] => {
+    const i = KO_STAGE_SEQ.indexOf(s)
+    if (i <= 0) return []
+    return bracket.filter(b => b.stage === KO_STAGE_SEQ[i - 1])
+  }
+  const feeder = (slot: BracketSlot, prev: BracketMatch[]): BracketMatch | null => {
+    const ref = slot.label.match(/^[WL](\d+)$/)
+    if (ref) return byNo.get(+ref[1]) ?? null
+    // Label was overwritten with the real team name → recover via the team that
+    // won the feeding game (scoped to the previous round, so it's unambiguous).
+    if (slot.code) return prev.find(p => p.winnerCode === slot.code) ?? null
+    return null
+  }
+
+  const pos = new Map<number, number>()
+  const inProgress = new Set<number>()
+  let leaf = 0
+  const place = (b: BracketMatch): number => {
+    if (b.match_no == null) return leaf++
+    const existing = pos.get(b.match_no)
+    if (existing != null) return existing
+    if (inProgress.has(b.match_no)) return leaf++ // cycle guard (shouldn't happen)
+    inProgress.add(b.match_no)
+    // A round with no earlier round (R32, or anything off the main tree) is a leaf.
+    const prev = prevStageMatches(b.stage)
+    let p: number
+    if (prev.length === 0) {
+      p = leaf++
+    } else {
+      const fh = feeder(b.home, prev)
+      const fa = feeder(b.away, prev)
+      const ph = fh ? place(fh) : leaf++
+      const pa = fa ? place(fa) : leaf++
+      p = (ph + pa) / 2
+    }
+    pos.set(b.match_no, p)
+    return p
+  }
+
+  const final = bracket.find(b => b.stage === 'final')
+  if (final) place(final)
+  // Position anything the Final didn't reach (third-place game, incomplete trees).
+  for (const b of bracket) if (b.match_no != null && !pos.has(b.match_no)) place(b)
+  return pos
 }
 
 // A team's run in this tournament: every finished match it played before

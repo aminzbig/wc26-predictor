@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { resolveBracket, assignThirdPlaces, projectMatchTeams } from './bracket'
+import { resolveBracket, assignThirdPlaces, projectMatchTeams, bracketOrder } from './bracket'
 import type { Match } from './types'
 
 let _id = 0
@@ -119,6 +119,33 @@ describe('resolveBracket', () => {
     expect(r16l.home).toMatchObject({ code: 'br', label: 'L73' })
   })
 
+  test('uses a knockout team already persisted in the DB (resolve-knockout wrote a real name into the label)', () => {
+    // Once a slot is confirmed, resolve-knockout.ts writes the real team into the
+    // row: home_code='mx', home_label='Mexico' (the NAME, no longer a seed like
+    // '1A'). The bracket must read that real team, not fall through to TBD.
+    const out = resolveBracket([
+      ...twoDoneGroups(),
+      mk({ match_no: 73, stage: 'r32', home_code: 'mx', home_label: 'Mexico',
+        away_code: 'ar', away_label: 'Argentina', multiplier: 1.5 }),
+    ])
+    const m = out.find(b => b.match_no === 73)!
+    expect(m.home).toMatchObject({ code: 'mx', name: 'Mexico', confirmed: true })
+    expect(m.away).toMatchObject({ code: 'ar', name: 'Argentina', confirmed: true })
+  })
+
+  test('cascades W{n} from a persisted-team R32 result into the next round', () => {
+    const out = resolveBracket([
+      ...twoDoneGroups(),
+      // R32 with real teams persisted AND a finished penalty result.
+      mk({ match_no: 73, stage: 'r32', home_code: 'mx', home_label: 'Mexico',
+        away_code: 'br', away_label: 'Brazil',
+        home_score: 1, away_score: 1, home_pens: 4, away_pens: 3, status: 'finished', multiplier: 1.5 }),
+      mk({ match_no: 89, stage: 'r16', home_label: 'W73', away_label: '2A', multiplier: 2 }),
+    ])
+    expect(out.find(b => b.match_no === 73)!.winnerCode).toBe('mx')
+    expect(out.find(b => b.match_no === 89)!.home).toMatchObject({ code: 'mx', label: 'W73' })
+  })
+
   test('winnerCode is null for a level game with no penalties', () => {
     const out = resolveBracket([
       ...twoDoneGroups(),
@@ -126,6 +153,73 @@ describe('resolveBracket', () => {
         home_score: 1, away_score: 1, status: 'finished', multiplier: 1.5 }),
     ])
     expect(out.find(b => b.match_no === 73)!.winnerCode).toBeNull()
+  })
+})
+
+// The full WC26 knockout schedule (match_no + seed labels), from supabase/seed.sql.
+function koSchedule(): Match[] {
+  const r32: [number, string, string][] = [
+    [73, '2A', '2B'], [74, '1E', '3A/B/C/D/F'], [75, '1F', '2C'], [76, '1C', '2F'],
+    [77, '1I', '3C/D/F/G/H'], [78, '2E', '2I'], [79, '1A', '3C/E/F/H/I'], [80, '1L', '3E/H/I/J/K'],
+    [81, '1D', '3B/E/F/I/J'], [82, '1G', '3A/E/H/I/J'], [83, '2K', '2L'], [84, '1H', '2J'],
+    [85, '1B', '3E/F/G/I/J'], [86, '1J', '2H'], [87, '1K', '3D/E/I/J/L'], [88, '2D', '2G'],
+  ]
+  const r16: [number, string, string][] = [
+    [89, 'W74', 'W77'], [90, 'W73', 'W75'], [91, 'W76', 'W78'], [92, 'W79', 'W80'],
+    [93, 'W83', 'W84'], [94, 'W81', 'W82'], [95, 'W86', 'W88'], [96, 'W85', 'W87'],
+  ]
+  const qf: [number, string, string][] = [
+    [97, 'W89', 'W90'], [98, 'W93', 'W94'], [99, 'W91', 'W92'], [100, 'W95', 'W96'],
+  ]
+  const sf: [number, string, string][] = [[101, 'W97', 'W98'], [102, 'W99', 'W100']]
+  const rows: { no: number; stage: Match['stage']; h: string; a: string }[] = [
+    ...r32.map(([no, h, a]) => ({ no, stage: 'r32' as const, h, a })),
+    ...r16.map(([no, h, a]) => ({ no, stage: 'r16' as const, h, a })),
+    ...qf.map(([no, h, a]) => ({ no, stage: 'qf' as const, h, a })),
+    ...sf.map(([no, h, a]) => ({ no, stage: 'sf' as const, h, a })),
+    { no: 103, stage: 'third', h: 'L101', a: 'L102' },
+    { no: 104, stage: 'final', h: 'W101', a: 'W102' },
+  ]
+  return rows.map(r => mk({ match_no: r.no, stage: r.stage, home_label: r.h, away_label: r.a, multiplier: 1.5 }))
+}
+
+describe('bracketOrder', () => {
+  const orderedNos = (matches: Match[], stage: Match['stage']) => {
+    const bracket = resolveBracket(matches)
+    const order = bracketOrder(bracket)
+    return bracket.filter(b => b.stage === stage)
+      .sort((a, b) => (order.get(a.match_no!) ?? 0) - (order.get(b.match_no!) ?? 0))
+      .map(b => b.match_no)
+  }
+
+  test('orders each round by bracket-tree position, not match_no', () => {
+    const ko = koSchedule()
+    // R32 in tree order: feeders of consecutive R16 cards are adjacent.
+    expect(orderedNos(ko, 'r32')).toEqual([74, 77, 73, 75, 83, 84, 81, 82, 76, 78, 79, 80, 86, 88, 85, 87])
+    expect(orderedNos(ko, 'r16')).toEqual([89, 90, 93, 94, 91, 92, 95, 96])
+    expect(orderedNos(ko, 'qf')).toEqual([97, 98, 99, 100])
+    expect(orderedNos(ko, 'sf')).toEqual([101, 102])
+  })
+
+  test('the two R32 feeders of an R16 card are adjacent in the ordered R32 column', () => {
+    // R16 #90 = W73 vs W75; in tree order #73 and #75 must sit next to each other.
+    const r32 = orderedNos(koSchedule(), 'r32')
+    const i73 = r32.indexOf(73), i75 = r32.indexOf(75)
+    expect(Math.abs(i73 - i75)).toBe(1)
+    expect(Math.min(i73, i75) % 2).toBe(0) // a feeder pair starts on an even index
+  })
+
+  test('keeps tree order after resolve-knockout overwrites a winner label with a team name', () => {
+    // The real bug: once Canada (W73) advances, the server writes its name into
+    // R16 #90's home label, erasing the 'W73' wiring. Order must still place #73
+    // and #75 as the adjacent feeders of #90 — recovered via winnerCode.
+    const sched = koSchedule().map(m => {
+      if (m.match_no === 73) return { ...m, home_code: 'za', away_code: 'ca', home_label: 'South Africa', away_label: 'Canada', home_score: 0, away_score: 1, status: 'finished' as const }
+      if (m.match_no === 90) return { ...m, home_code: 'ca', home_label: 'Canada' } // server-resolved W73
+      return m
+    })
+    expect(orderedNos(sched, 'r32')).toEqual([74, 77, 73, 75, 83, 84, 81, 82, 76, 78, 79, 80, 86, 88, 85, 87])
+    expect(orderedNos(sched, 'r16')).toEqual([89, 90, 93, 94, 91, 92, 95, 96])
   })
 })
 
