@@ -27,6 +27,15 @@ jobs:
         env:
           SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      # Override our projected knockout teams with API-Football's real fixtures —
+      # the authoritative bracket. Fixes cases our own third-place allocation gets
+      # wrong. Runs AFTER resolve-knockout (so it corrects a bad projection) and
+      # BEFORE fetch-football (so enrichment uses the correct teams).
+      - run: node scripts/reconcile-knockout-api.mjs --apply
+        env:
+          SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          APIFOOTBALL_KEY: ${{ secrets.APIFOOTBALL_KEY }}
       - run: node scripts/fetch-odds.mjs
         env:
           SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
